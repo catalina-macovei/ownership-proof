@@ -1,0 +1,123 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# production
+/build
+
+# misc
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Hardhat build artifacts
+artifacts/
+cache/
+typechain/
+typechain-types/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Hardhat test and coverage files
+coverage/
+coverage.json
+coverage-final.json
+.cache/
+gas-report.json
+
+# Optional npm cache directory
+.npm
+
+# Solidity build artifacts
+*.sol.ts
+
+# Truffle / Ganache files (if using)
+*.log
+*.tkn
+
+# Output of 'npm pack'
+*.tgz
+
+# VS Code
+.vscode/
+.history/ # If you use a history extension
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+
+# Linux
+.cache/
+
+# Build and output directories for React
+/build
+/dist
+out/
+
+# React specific
+*.env.local
+public/*.webmanifest
+public/robots.txt
+public/sitemap*
+public/*.ico
+
+# Next.js specific (if using)
+.next/
+.vercel/
+now.json
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+
+# IDEs and editors
+.idea/
+*.iml
+.project
+*.sublime-workspace
+*.sublime-project
+*.code-workspace
+
+# ESLint
+.eslintcache
+
+# Jest testing files
+jest-debug.log
+coverage/
+
+# TypeScript
+*.tsbuildinfo
+
+# Log files
+logs
+*.log
