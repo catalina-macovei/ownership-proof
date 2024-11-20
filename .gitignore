@@ -57,3 +57,24 @@ backend/artifacts/
 backend/typechain/
 backend/typechain-types/
 backend/gas-report.json
+
+# Hardhat
+artifacts/
+cache/
+coverage/
+coverage.json
+typechain/
+typechain-types/
+
+# Node
+node_modules/
+.env
+
+# Hardhat deployment files
+deployments/
+
+# Debug logs
+*.log
+
+# Local development
+.DS_Store

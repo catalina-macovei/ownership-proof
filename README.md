@@ -38,7 +38,7 @@ node server.js
 ```
 npx hardhat run scripts/deploy-test.js --network sepolia
 ```
--To run the tests
+- To run the tests
 ```
 npx hardhat test
 ```
