@@ -6,16 +6,11 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "hardhat/console.sol";
 
-contract ContentManager is Ownable{
+contract ContentManager is Ownable {
 
 
     modifier OnlyCreator (address creator){
         require (msg.sender == creator, "Action allowed only for the creator of the content!");
-        _;
-    } 
-
-    modifier OnlyCreatorOrAdmin (address creator){
-        require (msg.sender == creator || msg.sender == admin, "Action allowed only for the creator of the content!");
         _;
     } 
 
@@ -33,6 +28,10 @@ contract ContentManager is Ownable{
 
     event ContentUsageCountChanged(string CID, uint oldUsageCount, uint newUsageCount);
 
+    event PlatformFeeChanged(uint oldFee, uint newFee);
+
+    event FeePaid(address payer, uint amount);
+
 
     struct Content{
         address creator;
@@ -43,29 +42,38 @@ contract ContentManager is Ownable{
 
     mapping (string => Content) contents;
 
+    uint platformFee;
+
     address admin;
 
 
-   constructor(address initialOwner) Ownable(initialOwner) {
-        admin = msg.sender;
+   constructor(address initialOwner, uint initialPlatformFee) Ownable(initialOwner) {
+        platformFee = initialPlatformFee;
+        admin = initialOwner;
    }
 
 
     function addContent(uint price, string memory CID) public {
         
         require (contents[CID].creator == address(0), "Content is already on the platform!");
+        require (address(msg.sender).balance >= platformFee, "Insufficient funds to add content!");
 
+        // (bool paid, ) = ;
+        // require(paid, "Failed to pay platform fee");
+        
+        emit FeePaid(msg.sender, platformFee);
+        
         contents[CID] = Content({
             creator: msg.sender,
             price: price,
             usageCount: 0,
             CID: CID
         });
-        
+
         emit ContentAdded(msg.sender, CID);
     }
 
-    function removeContent(string memory CID) public OnlyCreatorOrAdmin(contents[CID].creator) OnlyExistentContent(CID) {
+    function removeContent(string memory CID) public OnlyCreator(contents[CID].creator) OnlyExistentContent(CID) {
 
        delete contents[CID]; 
 
@@ -99,6 +107,17 @@ contract ContentManager is Ownable{
         contents[CID].usageCount += noUsages;
 
         emit ContentUsageCountChanged(CID, oldUsageCount, contents[CID].usageCount);
+    }
+
+    function setPlatformFee(uint newPlatformFee) external onlyOwner {
+
+        require(newPlatformFee >= 0, "Platform fee cannot be negative");
+
+        uint oldFee = platformFee;
+
+        platformFee = newPlatformFee;
+
+        emit PlatformFeeChanged(oldFee, newPlatformFee);
     }
 
 }
