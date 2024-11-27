@@ -14,11 +14,16 @@ describe('ContentManager', function () {
     return { contentManager, owner, user1, cid};
   }
 
+  // test deploying contract
+
   it('should deploy and set the owner correctly', async function () {
     const { contentManager, owner } = await loadFixture(deployContractAndSetVariables);
 
     expect(await contentManager.owner()).to.equal(owner.address);
   });
+
+
+  // test getContent
 
   it('should get the content with given CID correctly', async function () {
     const { contentManager, owner, user1, cid } = await loadFixture(deployContractAndSetVariables);
@@ -31,6 +36,14 @@ describe('ContentManager', function () {
     expect(gotContent.price).to.equal(10);
     expect(gotContent.usageCount).to.equal(0);
   });
+
+  it('should not allow getting inexistent content', async function () {
+    const { contentManager, owner, user1, cid } = await loadFixture(deployContractAndSetVariables);
+
+    await expect(contentManager.getContent(cid)).to.be.revertedWith('Content not found!');
+  });
+
+  // test addContent
 
   it('should save the content', async function () {
     const { contentManager, owner, user1, cid } = await loadFixture(deployContractAndSetVariables);
@@ -60,6 +73,9 @@ describe('ContentManager', function () {
 
     await expect(contentManager.addContent(15, cid)).to.be.revertedWith('Content is already on the platform!');
   });
+
+
+  // test removeContent
 
 
 

@@ -14,6 +14,11 @@ contract ContentManager is Ownable{
         _;
     } 
 
+    modifier OnlyCreatorOrAdmin (address creator){
+        require (msg.sender == creator || msg.sender == admin, "Action allowed only for the creator of the content!");
+        _;
+    } 
+
     modifier OnlyExistentContent (string memory CID) {
         require (contents[CID].creator != address(0), "Content not found!");
         _;
@@ -38,15 +43,18 @@ contract ContentManager is Ownable{
 
     mapping (string => Content) contents;
 
+    address admin;
+
 
    constructor(address initialOwner) Ownable(initialOwner) {
+        admin = msg.sender;
    }
 
 
     function addContent(uint price, string memory CID) public {
         
         require (contents[CID].creator == address(0), "Content is already on the platform!");
-        
+
         contents[CID] = Content({
             creator: msg.sender,
             price: price,
@@ -57,7 +65,7 @@ contract ContentManager is Ownable{
         emit ContentAdded(msg.sender, CID);
     }
 
-    function removeContent(string memory CID) public OnlyCreator(contents[CID].creator) OnlyExistentContent(CID) {
+    function removeContent(string memory CID) public OnlyCreatorOrAdmin(contents[CID].creator) OnlyExistentContent(CID) {
 
        delete contents[CID]; 
 
