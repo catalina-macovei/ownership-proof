@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "hardhat/console.sol";
 
-contract ContentManager is Ownable{
+contract ContentManager is Ownable {
 
 
     modifier OnlyCreator (address creator){
@@ -28,6 +28,10 @@ contract ContentManager is Ownable{
 
     event ContentUsageCountChanged(string CID, uint oldUsageCount, uint newUsageCount);
 
+    event PlatformFeeChanged(uint oldFee, uint newFee);
+
+    event FeePaid(address payer, uint amount);
+
 
     struct Content{
         address creator;
@@ -38,14 +42,26 @@ contract ContentManager is Ownable{
 
     mapping (string => Content) contents;
 
+    uint platformFee;
 
-   constructor(address initialOwner) Ownable(initialOwner) {
+    address admin;
+
+
+   constructor(address initialOwner, uint initialPlatformFee) Ownable(initialOwner) {
+        platformFee = initialPlatformFee;
+        admin = initialOwner;
    }
 
 
     function addContent(uint price, string memory CID) public {
         
         require (contents[CID].creator == address(0), "Content is already on the platform!");
+        require (address(msg.sender).balance >= platformFee, "Insufficient funds to add content!");
+
+        // (bool paid, ) = ;
+        // require(paid, "Failed to pay platform fee");
+        
+        emit FeePaid(msg.sender, platformFee);
         
         contents[CID] = Content({
             creator: msg.sender,
@@ -53,7 +69,7 @@ contract ContentManager is Ownable{
             usageCount: 0,
             CID: CID
         });
-        
+
         emit ContentAdded(msg.sender, CID);
     }
 
@@ -91,6 +107,17 @@ contract ContentManager is Ownable{
         contents[CID].usageCount += noUsages;
 
         emit ContentUsageCountChanged(CID, oldUsageCount, contents[CID].usageCount);
+    }
+
+    function setPlatformFee(uint newPlatformFee) external onlyOwner {
+
+        require(newPlatformFee >= 0, "Platform fee cannot be negative");
+
+        uint oldFee = platformFee;
+
+        platformFee = newPlatformFee;
+
+        emit PlatformFeeChanged(oldFee, newPlatformFee);
     }
 
 }
