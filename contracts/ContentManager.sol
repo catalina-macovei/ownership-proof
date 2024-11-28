@@ -73,23 +73,21 @@ contract ContentManager is Ownable {
         emit ContentAdded(msg.sender, CID);
     }
 
-    function removeContent(string memory CID) public OnlyCreator(contents[CID].creator) OnlyExistentContent(CID) {
+    function removeContent(string memory CID) public OnlyExistentContent(CID) OnlyCreator(contents[CID].creator) {
 
        delete contents[CID]; 
 
        emit ContentRemoved(msg.sender, CID);
     }
 
-    function getContent(string memory CID) external view OnlyExistentContent(CID) returns (address creator, uint price, uint usageCount) {
+    function getContent(string memory CID) public view OnlyExistentContent(CID) returns (address creator, uint price, uint usageCount) {
 
         Content memory content = contents[CID];
 
         return (content.creator, content.price, content.usageCount);
     }
 
-    function setPrice(string memory CID, uint newPrice) external OnlyCreator(contents[CID].creator) OnlyExistentContent(CID) {
-
-        require(newPrice >= 0, "Price cannot be negative!");
+    function setPrice(string memory CID, uint newPrice) external OnlyExistentContent(CID) OnlyCreator(contents[CID].creator) {
 
         uint oldPrice = contents[CID].price;
 
@@ -98,20 +96,21 @@ contract ContentManager is Ownable {
         emit ContentPriceChanged(CID, oldPrice, newPrice);
     }
 
-    function increaseUsageCountBy(string memory CID, uint noUsages) external OnlyExistentContent(CID) {
-
-        require(noUsages >= 0, "UsageCount cannot be decreased!");
+    function increaseUsageCount(string memory CID) external OnlyExistentContent(CID) {
 
         uint oldUsageCount = contents[CID].usageCount;
 
-        contents[CID].usageCount += noUsages;
+        contents[CID].usageCount += 1;
 
         emit ContentUsageCountChanged(CID, oldUsageCount, contents[CID].usageCount);
     }
 
-    function setPlatformFee(uint newPlatformFee) external onlyOwner {
+    function getPlatformFee() public view returns (uint fee) {
 
-        require(newPlatformFee >= 0, "Platform fee cannot be negative");
+        return (platformFee);
+    }
+
+    function setPlatformFee(uint newPlatformFee) external onlyOwner {
 
         uint oldFee = platformFee;
 
