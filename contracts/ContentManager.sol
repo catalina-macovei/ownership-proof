@@ -50,15 +50,14 @@ contract ContentManager is Ownable {
         admin = initialOwner;
    }
 
-   receive() external payable {
-        (bool s,) = payable(admin).call{value: msg.value}("");
-        require(s);
-    }
 
-
-    function addContent(uint price, string memory CID) public {
+    function addContent(uint price, string memory CID) public payable {
         
         require (contents[CID].creator == address(0), "Content is already on the platform!");
+
+        require(msg.value == platformFee, "You must pay the platform fee to upload content");
+        (bool success,) = payable(admin).call{value: msg.value}("");
+        require(success);
         
         contents[CID] = Content({
             creator: msg.sender,
