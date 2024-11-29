@@ -30,8 +30,6 @@ contract ContentManager is Ownable {
 
     event PlatformFeeChanged(uint oldFee, uint newFee);
 
-    event FeePaid(address payer, uint amount);
-
 
     struct Content{
         address creator;
@@ -52,16 +50,15 @@ contract ContentManager is Ownable {
         admin = initialOwner;
    }
 
+   receive() external payable {
+        (bool s,) = payable(admin).call{value: msg.value}("");
+        require(s);
+    }
+
 
     function addContent(uint price, string memory CID) public {
         
         require (contents[CID].creator == address(0), "Content is already on the platform!");
-        require (address(msg.sender).balance >= platformFee, "Insufficient funds to add content!");
-
-        // (bool paid, ) = ;
-        // require(paid, "Failed to pay platform fee");
-        
-        emit FeePaid(msg.sender, platformFee);
         
         contents[CID] = Content({
             creator: msg.sender,
