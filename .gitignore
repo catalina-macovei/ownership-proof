@@ -80,5 +80,5 @@ deployments/
 .DS_Store
 
 # Cache folders
-.deps/
-.states/
+.deps
+.states
