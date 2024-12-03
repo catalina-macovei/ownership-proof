@@ -78,3 +78,7 @@ deployments/
 
 # Local development
 .DS_Store
+
+# Cache folders
+.deps/
+.states/
