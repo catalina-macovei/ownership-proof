@@ -17,7 +17,7 @@ describe('ContentManager', function () {
 
     const addedPrice = 10;
 
-    await contentManager.addContent(addedPrice, addedCid);
+    await contentManager.addContent(addedPrice, addedCid, {value: platformFee});
 
 
     return { contentManager, platformFee, owner, user1, addedCid, addedPrice, newCid};
@@ -56,7 +56,7 @@ describe('ContentManager', function () {
   it('should save the content', async function () {
     const { contentManager, platformFee, owner, user1, addedCid, addedPrice, newCid } = await loadFixture(deployContractAndSetVariables);
 
-    await contentManager.addContent(15, newCid);
+    await contentManager.addContent(15, newCid, {value: platformFee});
 
     const savedContent = await contentManager.getContent(newCid);
 
@@ -69,13 +69,31 @@ describe('ContentManager', function () {
   it('should emit ContentAdded event after saving the content', async function () {
     const { contentManager, platformFee, owner, user1, addedCid, addedPrice, newCid } = await loadFixture(deployContractAndSetVariables);
 
-    await expect(contentManager.addContent(15, newCid)).to.emit(contentManager, "ContentAdded").withArgs(owner, newCid);
+    await expect(contentManager.addContent(15, newCid, {value: platformFee})).to.emit(contentManager, "ContentAdded").withArgs(owner, newCid);
   });
 
   it('should not allow uploads of duplicate content', async function () {
-    const { contentManager, platformFee, owner, addedCid, addedPrice, newCid } = await loadFixture(deployContractAndSetVariables);
+    const { contentManager, platformFee, owner, user1, addedCid, addedPrice, newCid } = await loadFixture(deployContractAndSetVariables);
 
-    await expect(contentManager.addContent(15, addedCid)).to.be.revertedWith('Content is already on the platform!');
+    await expect(contentManager.addContent(15, addedCid, {value: platformFee})).to.be.revertedWith('Content is already on the platform!');
+  });
+
+  it('should not allow uploads without paying the platform fee', async function () {
+    const { contentManager, platformFee, owner, user1, addedCid, addedPrice, newCid } = await loadFixture(deployContractAndSetVariables);
+
+    await expect(contentManager.addContent(15, newCid)).to.be.revertedWith('You must pay the platform fee to upload content');
+  });
+
+  it('should transfer the platform fee into owner s account', async function () {
+    const { contentManager, platformFee, owner, user1, addedCid, addedPrice, newCid } = await loadFixture(deployContractAndSetVariables);
+
+    const ownerBalanceBefore = await ethers.provider.getBalance(owner.address);
+    
+    await contentManager.connect(user1).addContent(15, newCid, {value: platformFee});
+
+    const ownerBalanceAfter = await ethers.provider.getBalance(owner.address);
+
+    expect(ownerBalanceAfter).to.equal(ownerBalanceBefore + BigInt(platformFee));
   });
 
 
