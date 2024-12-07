@@ -34,10 +34,16 @@ npm start
 ```
 node server.js
 ```
-- To deploy the smart contract run the following command
+- To deploy the smart contracts run the following command
 ```
-npx hardhat run scripts/deploy-test.js --network sepolia
+npx hardhat run scripts/deploy.js --network sepolia   
 ```
+- After deployment, copy contract addresses and paste them in the .env file
+```
+Content_Manager=contract_address_here
+Licence_Manager=contract_address_here
+```    
+
 - To run the tests
 ```
 npx hardhat test
