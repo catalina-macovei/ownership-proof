@@ -3,7 +3,8 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useSDK } from "@metamask/sdk-react";
 import './App.css';
 import DisplayContent from './components/DisplayContent';
-import AddContent from './components/AddContent';
+import Layout from './pages/Layout';
+import Content from './pages/Content'
 
 function App() {
     const [account, setAccount] = useState();
