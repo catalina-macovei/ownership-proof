@@ -1,6 +1,6 @@
 import axios from 'axios';
 import React, { useState } from 'react';
-import Layout from './Layout';
+import Layout from './Header';
 
 const Content = () => {
 
@@ -44,14 +44,13 @@ const Content = () => {
 
   return (
     <div className="App">
-      <Layout></Layout> <br /> <br />
 
       <form className="form" onSubmit={processForm}>
         <label id="data">Content</label><br />
         <input type="file" id="data" name="data" onChange={captureFile} /> <br /> < br />
         <label id="price">Price of licence</label> <br /> 
         <input type="number" id="price" name="price" defaultValue={0}/> <br /> < br />
-        <button type="submit" className="btn">Upload file</button>
+        <button type="submit" className="btn">Save</button>
       </form>
     </div>
   )

@@ -4,6 +4,10 @@ import App from "./App";
 import { MetaMaskProvider } from "@metamask/sdk-react";
 import './index.css';
 import reportWebVitals from './reportWebVitals';
+import { createBrowserRouter, RouterProvider} from "react-router-dom"
+import routes from "./routes/router"
+
+const router = createBrowserRouter(routes)
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
@@ -16,7 +20,7 @@ root.render(
         },
         infuraAPIKey: process.env.INFURA_API_KEY,
       }}>
-      <App />
+      <RouterProvider router={router} />
     </MetaMaskProvider>
   </React.StrictMode>
 );

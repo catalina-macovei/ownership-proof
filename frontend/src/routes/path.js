@@ -1,7 +1,7 @@
 
 const Path = {
     WELCOME: "/",
-    CONTENT: "/allContent",
+    CONTENT: "/add-content",
     HOME: "/home"
 }
 
