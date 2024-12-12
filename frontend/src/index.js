@@ -5,9 +5,7 @@ import { MetaMaskProvider } from "@metamask/sdk-react";
 import './index.css';
 import reportWebVitals from './reportWebVitals';
 import { createBrowserRouter, RouterProvider} from "react-router-dom"
-import routes from "./routes/router"
-
-const router = createBrowserRouter(routes)
+import router from "./routes/router"
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(

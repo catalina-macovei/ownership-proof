@@ -5,22 +5,25 @@ import Content from "../components/Content"
 import Layout from "../components/Header"
 import App from "../App"
 import Welcome from "../components/Welcome"
+import { createBrowserRouter, RouterProvider} from "react-router-dom"           
 
 const routes = [
-    {
-      element: <App />,
-      children: [
-        {
-          path: "/",
-          element: <Welcome />
-        },
-        {
-            path: "/add-content",
-            element: <Content />
-        },
-      ],
-    },
-  ]
+  {
+    path: "/", // Explicitly define the root path
+    element: <App />,
+    children: [
+      {
+        index: true, // This tells react-router this is the index route
+        element: <Welcome />
+      },
+      {
+        path: "add-content", // Remove the leading slash
+        element: <Content />
+      },
+    ],
+  },
+];
 
+const router = createBrowserRouter(routes);
 
-export default routes
+export default router;

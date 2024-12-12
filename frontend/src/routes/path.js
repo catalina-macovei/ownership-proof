@@ -2,7 +2,7 @@
 const Path = {
     WELCOME: "/",
     CONTENT: "/add-content",
-    HOME: "/home"
+    MY_LICENCES: "/my-licences"
 }
 
 export default Path
