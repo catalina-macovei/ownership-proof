@@ -4,9 +4,9 @@ import Path from "../routes/path"
 import { useLocation, Link } from 'react-router-dom';
 
 const navigation = [
-  { name: 'Browse content', path: Path.WELCOME },
-  { name: 'My content', path: Path.CONTENT },
-  { name: 'My licences', path: Path.MY_LICENCES },
+  { name: 'Browse content', path: Path.WELCOME, title: 'Welcome' },
+  { name: 'My content', path: Path.MY_CONTENT, title: 'My content' },
+  { name: 'My licences', path: Path.MY_LICENCES, title: 'My licences' },
 ];
 
 function classNames(...classes) {
@@ -60,7 +60,7 @@ export default function Header() {
             <div className="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
             <Link
               key='Upload content'
-              to={Path.CONTENT}
+              to={Path.NEW_CONTENT}
               aria-current={false ? 'page' : undefined}
               className={classNames(
                 false ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white',
@@ -139,7 +139,12 @@ export default function Header() {
 
       <header className="bg-white shadow">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">Upload content</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900 text-center">
+            {location.pathname === Path.NEW_CONTENT 
+            ? 'Upload content'
+            : location.pathname === Path.WELCOME 
+              ? '' 
+              : navigation.find(item => item.path === location.pathname)?.title}</h1>
         </div>
       </header>
     </div>
