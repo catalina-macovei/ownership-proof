@@ -1,6 +1,5 @@
 import axios from 'axios';
 import React, { useState } from 'react';
-import Layout from './Header';
 import { PhotoIcon } from '@heroicons/react/24/solid'
 
 const Content = () => {

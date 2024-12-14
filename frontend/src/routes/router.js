@@ -1,23 +1,20 @@
 import React from "react"
-
-import Path from "./path"
 import Content from "../components/Content"
-import Layout from "../components/Header"
 import App from "../App"
 import Welcome from "../components/Welcome"
-import { createBrowserRouter, RouterProvider} from "react-router-dom"           
+import { createBrowserRouter} from "react-router-dom"           
 
 const routes = [
   {
-    path: "/", // Explicitly define the root path
+    path: "/",
     element: <App />,
     children: [
       {
-        index: true, // This tells react-router this is the index route
+        index: true,
         element: <Welcome />
       },
       {
-        path: "add-content", // Remove the leading slash
+        path: "add-content",
         element: <Content />
       },
     ],

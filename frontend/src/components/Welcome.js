@@ -1,3 +1,11 @@
+import mountainImage from '../assets/mountain-picture.jpg';
+import duckImage from '../assets/duck-picture.jpg';
+import butterflyImage from '../assets/butterfly-picture.jpg';
+import winterImage from '../assets/winter-picture.jpg';
+import flowersImage from '../assets/flowers-picture.jpg';
+import waterfall2Image from '../assets/waterfall2-picture.jpg';
+import forestImage from '../assets/hill-picture.jpg';
+
 export default function Welcome() {
     return (
       <div className="relative overflow-hidden bg-white">
@@ -5,11 +13,13 @@ export default function Welcome() {
           <div className="relative mx-auto max-w-7xl px-4 sm:static sm:px-6 lg:px-8">
             <div className="sm:max-w-lg">
               <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
-                Summer styles are finally here
+              Unlock Creativity, Empower Creators
               </h1>
               <p className="mt-4 text-xl text-gray-500">
-                This year, our new summer collection will shelter you from the harsh elements of a world that doesn't care
-                if you live or die.
+                Discover, share, and monetize digital content on a decentralized marketplace. Upload your original work, explore unique creations, and purchase usage licenses – all powered by blockchain technology.
+              </p>
+              <p className="mt-4 text-xl text-gray-500">
+                Connect your wallet to start exploring and creating.
               </p>
             </div>
             <div>
@@ -24,38 +34,15 @@ export default function Welcome() {
                       <div className="grid shrink-0 grid-cols-1 gap-y-6 lg:gap-y-8">
                         <div className="h-64 w-44 overflow-hidden rounded-lg sm:opacity-0 lg:opacity-100">
                           <img
-                            alt=""
-                            src="https://tailwindui.com/plus/img/ecommerce-images/home-page-03-hero-image-tile-01.jpg"
+                            alt="Mountain image"
+                            src={mountainImage}
                             className="size-full object-cover"
                           />
                         </div>
                         <div className="h-64 w-44 overflow-hidden rounded-lg">
                           <img
-                            alt=""
-                            src="https://tailwindui.com/plus/img/ecommerce-images/home-page-03-hero-image-tile-02.jpg"
-                            className="size-full object-cover"
-                          />
-                        </div>
-                      </div>
-                      <div className="grid shrink-0 grid-cols-1 gap-y-6 lg:gap-y-8">
-                        <div className="h-64 w-44 overflow-hidden rounded-lg">
-                          <img
-                            alt=""
-                            src="https://tailwindui.com/plus/img/ecommerce-images/home-page-03-hero-image-tile-03.jpg"
-                            className="size-full object-cover"
-                          />
-                        </div>
-                        <div className="h-64 w-44 overflow-hidden rounded-lg">
-                          <img
-                            alt=""
-                            src="https://tailwindui.com/plus/img/ecommerce-images/home-page-03-hero-image-tile-04.jpg"
-                            className="size-full object-cover"
-                          />
-                        </div>
-                        <div className="h-64 w-44 overflow-hidden rounded-lg">
-                          <img
-                            alt=""
-                            src="https://tailwindui.com/plus/img/ecommerce-images/home-page-03-hero-image-tile-05.jpg"
+                            alt="Flowers on a book image"
+                            src={flowersImage}
                             className="size-full object-cover"
                           />
                         </div>
@@ -63,15 +50,38 @@ export default function Welcome() {
                       <div className="grid shrink-0 grid-cols-1 gap-y-6 lg:gap-y-8">
                         <div className="h-64 w-44 overflow-hidden rounded-lg">
                           <img
-                            alt=""
-                            src="https://tailwindui.com/plus/img/ecommerce-images/home-page-03-hero-image-tile-06.jpg"
+                            alt="Waterfall image"
+                            src={waterfall2Image}
                             className="size-full object-cover"
                           />
                         </div>
                         <div className="h-64 w-44 overflow-hidden rounded-lg">
                           <img
-                            alt=""
-                            src="https://tailwindui.com/plus/img/ecommerce-images/home-page-03-hero-image-tile-07.jpg"
+                            alt="Butterfly image"
+                            src={butterflyImage}
+                            className="size-full object-cover"
+                          />
+                        </div>
+                        <div className="h-64 w-44 overflow-hidden rounded-lg">
+                          <img
+                            alt="Hill with forest in autumn"
+                            src={forestImage}
+                            className="size-full object-cover"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid shrink-0 grid-cols-1 gap-y-6 lg:gap-y-8">
+                        <div className="h-64 w-44 overflow-hidden rounded-lg">
+                          <img
+                            alt="Image with mountains during winter"
+                            src={winterImage}
+                            className="size-full object-cover"
+                          />
+                        </div>
+                        <div className="h-64 w-44 overflow-hidden rounded-lg">
+                          <img
+                            alt="Duck image"
+                            src={duckImage}
                             className="size-full object-cover"
                           />
                         </div>
@@ -84,7 +94,7 @@ export default function Welcome() {
                   href="#"
                   className="inline-block rounded-md border border-transparent bg-indigo-600 px-8 py-3 text-center font-medium text-white hover:bg-indigo-700"
                 >
-                  Shop Collection
+                  Get started
                 </a>
               </div>
             </div>
