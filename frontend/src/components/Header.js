@@ -1,10 +1,11 @@
 import { Disclosure, DisclosureButton, DisclosurePanel, Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
-import { Bars3Icon, BellIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'
 import Path from "../routes/path"
 import { useLocation, Link } from 'react-router-dom';
 
 const navigation = [
-  { name: 'Browse content', path: Path.WELCOME, title: 'Welcome' },
+  { name: 'Welcome', path: Path.WELCOME, title: '' },
+  { name: 'Browse content', path: Path.ALL_CONTENT, title: 'Browse content' },
   { name: 'My content', path: Path.MY_CONTENT, title: 'My content' },
   { name: 'My licences', path: Path.MY_LICENCES, title: 'My licences' },
 ];

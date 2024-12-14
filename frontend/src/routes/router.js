@@ -1,8 +1,9 @@
 import React from "react"
-import Content from "../components/Content"
 import App from "../App"
 import Welcome from "../components/Welcome"
 import { createBrowserRouter} from "react-router-dom"           
+import NewContent from "../components/NewContent"
+import AllContent from "../components/AllContent"
 
 const routes = [
   {
@@ -15,7 +16,11 @@ const routes = [
       },
       {
         path: "add-content",
-        element: <Content />
+        element: <NewContent />
+      },
+      {
+        path: "all-content",
+        element: <AllContent />
       },
     ],
   },

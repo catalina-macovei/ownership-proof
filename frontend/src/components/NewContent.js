@@ -2,7 +2,7 @@ import axios from 'axios';
 import React, { useState } from 'react';
 import { PhotoIcon } from '@heroicons/react/24/solid'
 
-const Content = () => {
+const NewContent = () => {
 
     const [proof, setProof] = useState(null);
     const [fileName, setFileName] = useState('');
@@ -124,4 +124,4 @@ const Content = () => {
   )
 };
 
-export default Content;
+export default NewContent;
