@@ -31,7 +31,7 @@ contract LicenceManager {
 
     // verifica daca contentul exista dupa cid
     modifier onlyValidContent(string memory CID) {
-        (address creator,,) = contentManager.getContent(CID);
+        (address creator,,,) = contentManager.getContent(CID);
         require(creator != address(0), "Content does not exist");
         _;
     }
@@ -60,7 +60,7 @@ contract LicenceManager {
 
     // plata pentru licenta
     function pay(string memory CID) external payable onlyValidContent(CID) {
-        (, uint256 price, ) = contentManager.getContent(CID);
+        (, uint256 price,, ) = contentManager.getContent(CID);
         require(msg.value >= price, "Insufficient payment");
 
         // verifica daca userul deja are o licenta activa
@@ -69,7 +69,7 @@ contract LicenceManager {
 
         licencePayments[CID] = msg.value;
 
-        (address creator, , ) = contentManager.getContent(CID);
+        (address creator, , , ) = contentManager.getContent(CID);
         (bool success, ) = payable(creator).call{value: msg.value}("");
         require(success, "Payment failed");
 
