@@ -4,15 +4,9 @@ require("dotenv").config();
 module.exports = {
   solidity: "0.8.20",
   networks: {
-    // sepolia: {
-    //   url: `https://sepolia.infura.io/v3/${process.env.INFURA_API_KEY}`,
-    //   accounts: [process.env.PRIVATE_KEY]
-    // },
-    hardhat: {
-      gas: "auto",
-      mining: {
-        interval: 2000 //ms
-      }
+    sepolia: {
+      url: `https://sepolia.infura.io/v3/${process.env.INFURA_API_KEY}`,
+      accounts: [process.env.PRIVATE_KEY]
     }
   }
 };

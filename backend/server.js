@@ -8,7 +8,7 @@ import { ethers } from 'ethers';
 import { createRequire } from 'module';
 
 const require = createRequire(import.meta.url);
-const LicenseManager = require('../artifacts/contracts/ContentManager.sol/ContentManager.json');
+const ContentManager = require('../artifacts/contracts/ContentManager.sol/ContentManager.json');
 dotenv.config();
 
 console.log('Environment variables loaded:', {
@@ -17,7 +17,7 @@ console.log('Environment variables loaded:', {
     hasContractAddress: !!process.env.CONTENT_MANAGER
 });
 
-console.log('Contract ABI:', LicenseManager.abi ? 'Loaded' : 'Not loaded');
+console.log('Contract ABI:', ContentManager.abi ? 'Loaded' : 'Not loaded');
 console.log('Contract Address:', process.env.CONTENT_MANAGER);
 
 const provider = new ethers.JsonRpcProvider(process.env.SEPOLIA_RPC_URL);
@@ -29,7 +29,7 @@ const privateKey = process.env.PRIVATE_KEY.startsWith('0x')
 const signer = new ethers.Wallet(privateKey, provider);
 const contract = new ethers.Contract(
     process.env.CONTENT_MANAGER,
-    LicenseManager.abi,
+    ContentManager.abi,
     signer
 );
 
@@ -85,6 +85,7 @@ application.post('/api/v1/authorship-proof', upload.single('file'), async (req, 
     
         const cidString = cid.toString(); 
 
+        const platformFee = await contract.getPlatformFee();
         const tx = await contract.addContent(price, cidString, { value: platformFee });
         const receipt = await tx.wait();
         console.log('Transaction hash:', receipt.hash);

@@ -5,14 +5,22 @@ import { PhotoIcon } from '@heroicons/react/24/solid'
 const Content = () => {
 
     const [proof, setProof] = useState(null);
-    const [selectedFileName, setSelectedFileName] = useState('');
+    const [fileName, setFileName] = useState('');
+    const [price, setPrice] = useState(null);
 
   // Gestioneaza selectarea fisierului
   const captureFile = (event) => {
     const selectedProof = event.target.files[0];
     setProof(selectedProof);
-    setSelectedFileName(selectedProof.name);
+    setFileName(selectedProof.name);
     console.log('Document selectat:', selectedProof); // Afiseaza documentul selectat
+  };
+
+  // Gestioneaza introducerea pretului
+  const capturePrice = (event) => {
+    const selectedPrice = event.target.value;
+    setPrice(selectedPrice);
+    console.log('Pretul introdus:', selectedPrice); // Afiseaza pretul introdus
   };
 
   // Gestioneaza trimiterea formularului
@@ -45,35 +53,7 @@ const Content = () => {
   };
 
   return (
-    <div class="mx-auto max-w-2xl px-4 py-6 sm:px-6 lg:px-8">
-
-      {/* <form className="form" onSubmit={processForm}>
-        <label id="data">Content</label><br />
-        <input type="file" id="data" name="data" onChange={captureFile} /> <br /> < br />
-        <label id="price">Price of licence</label> <br /> 
-        <input type="number" id="price" name="price" defaultValue={0}/> <br /> < br />
-
-        <div>
-          <label htmlFor="price" className="block text-sm/6 font-medium text-gray-900">
-            Price
-          </label>
-          <div className="mt-2">
-            <div className="flex items-center rounded-md bg-white pl-3 outline outline-1 -outline-offset-1 outline-gray-300 has-[input:focus-within]:outline has-[input:focus-within]:outline-2 has-[input:focus-within]:-outline-offset-2 has-[input:focus-within]:outline-indigo-600">
-              <div className="shrink-0 select-none text-base text-gray-500 sm:text-sm/6">ETH</div>
-              <input
-                id="price"
-                name="price"
-                type="text"
-                placeholder="0.00"
-                className="block min-w-0 grow py-1.5 pl-1 pr-3 text-base text-gray-900 placeholder:text-gray-400 focus:outline focus:outline-0 sm:text-sm/6"
-              />
-            </div>
-          </div>
-        </div>
-        
-        <button type="submit" className="btn">Save</button>
-      </form> */}
-
+    <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6 lg:px-8">
 
       <form onSubmit={processForm}>
         <div className="space-y-12">
@@ -93,6 +73,7 @@ const Content = () => {
                       type="text"
                       placeholder="0.00"
                       className="block min-w-0 grow py-1.5 pl-1 pr-3 text-base text-gray-900 placeholder:text-gray-400 focus:outline focus:outline-0 sm:text-sm/6"
+                      onChange={capturePrice}
                     />
                   </div>
                 </div>
@@ -119,9 +100,9 @@ const Content = () => {
                     </div>
                     <p className="text-xs/5 text-gray-600">PNG, JPG, GIF up to 10MB</p>
                   </div>}
-                  {selectedFileName && (
+                  {fileName && (
                         <p className="text-sm text-gray-600 mt-2">
-                          Selected file: {selectedFileName}
+                          Selected file: {fileName}
                         </p>
                       )}
                 </div>
