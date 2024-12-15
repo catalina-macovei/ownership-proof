@@ -21,14 +21,12 @@ const NewContent = () => {
     const captureTitle = (event) => {
         const selectedTitle = event.target.value;
         setTitle(selectedTitle);
-        console.log('Titlul introdus:', selectedTitle); // Afiseaza titlul introdus
     };
 
     // Gestioneaza introducerea pretului
     const capturePrice = (event) => {
         const selectedPrice = event.target.value;
         setPrice(selectedPrice);
-        console.log('Pretul introdus:', selectedPrice); // Afiseaza pretul introdus
     };
 
     // Gestioneaza trimiterea formularului
@@ -57,7 +55,6 @@ const NewContent = () => {
         uploadData.append('title', title);
 
         try {
-            // Set loading state to true
             setIsLoading(true);
 
             const result = await axios.post('http://localhost:8000/api/v1/authorship-proof', uploadData, {
@@ -73,7 +70,6 @@ const NewContent = () => {
             console.error('Eroare la incarcarea documentului:', uploadError.response || uploadError);
             alert('Eroare la incarcarea documentului');
         } finally {
-            // Set loading state back to false
             setIsLoading(false);
         }
     };

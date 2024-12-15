@@ -4,6 +4,7 @@ import Welcome from "../components/Welcome"
 import { createBrowserRouter} from "react-router-dom"           
 import NewContent from "../components/NewContent"
 import DisplayContent from "../components/DisplayContent"
+import MyContent from "../components/MyContent"
 
 const routes = [
   {
@@ -21,6 +22,10 @@ const routes = [
       {
         path: "content",
         element: <DisplayContent />
+      },
+      {
+        path: "my-content",
+        element: <MyContent />
       },
     ],
   },

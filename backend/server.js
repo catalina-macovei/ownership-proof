@@ -124,6 +124,25 @@ application.get('/api/v1/content', async (req, res) => {
     }
 });
 
+// get all files for a creator endpoint
+application.get('/api/v1/my-content', async (req, res) => {
+    try {
+        const allContents = await contract.getAllContentDetails();
+        const formattedContent = allContents.filter(c => c[0] == signer.address).map(content => ({
+            creator: content[0],
+            price: content[1].toString(),
+            usageCount: content[2].toString(),
+            CID: content[3],
+            fileUrl: `https://${content[3]}.ipfs.w3s.link`
+        }));
+        res.json(formattedContent);
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({ message: 'Error fetching content' });
+    }
+});
+
+
 
 // Start the server
 application.listen(port, () => {
