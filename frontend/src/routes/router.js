@@ -3,7 +3,7 @@ import App from "../App"
 import Welcome from "../components/Welcome"
 import { createBrowserRouter} from "react-router-dom"           
 import NewContent from "../components/NewContent"
-import AllContent from "../components/AllContent"
+import DisplayContent from "../components/DisplayContent"
 
 const routes = [
   {
@@ -19,8 +19,8 @@ const routes = [
         element: <NewContent />
       },
       {
-        path: "all-content",
-        element: <AllContent />
+        path: "content",
+        element: <DisplayContent />
       },
     ],
   },

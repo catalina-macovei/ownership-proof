@@ -4,7 +4,6 @@ import App from "./App";
 import { MetaMaskProvider } from "@metamask/sdk-react";
 import './index.css';
 import reportWebVitals from './reportWebVitals';
-import ReactDOM from 'react-dom/client';
 import { RouterProvider} from "react-router-dom"
 import router from "./routes/router"
 

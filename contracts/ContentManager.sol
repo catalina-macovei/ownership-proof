@@ -19,9 +19,7 @@ contract ContentManager is Ownable {
     event ContentAdded(address creator, string CID);
     event ContentRemoved(address creator, string CID);
     event ContentPriceChanged(string CID, uint oldPrice, uint newPrice);
-
     event ContentTitleChanged(string CID, string oldTitle, string newTitle);
-
     event ContentUsageCountChanged(string CID, uint oldUsageCount, uint newUsageCount);
     event PlatformFeeChanged(uint oldFee, uint newFee);
 

@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Outlet } from 'react-router-dom';
 import { useSDK } from "@metamask/sdk-react";
 import './App.css';
-import DisplayContent from './components/DisplayContent';
+import Header from './components/Header';
+
+export const ApiContext = React.createContext({});
 
 function App() {
     const [account, setAccount] = useState();
