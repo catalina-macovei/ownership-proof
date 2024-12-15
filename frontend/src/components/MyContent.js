@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
+import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react'
+import { ExclamationTriangleIcon } from '@heroicons/react/24/outline'
+import axios from 'axios';
 
 const FilePreview = ({ fileUrl }) => {
     const [fileType, setFileType] = useState(null);
@@ -77,9 +80,33 @@ const FilePreview = ({ fileUrl }) => {
     );
 };
 
+
 const MyContent = () => {
     const [contentList, setContentList] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [open, setOpen] = useState(false);
+    const [selectedContentCid, setSelectedContentCid] = useState(null);
+
+    const handleDeleteClick = async (event) => {
+        setIsLoading(true);
+        try {
+            const result = await axios.post('http://localhost:8000/api/v1/delete-content', {
+                cid: selectedContentCid,
+              });
+              setIsLoading(false);
+              setOpen(false);
+              alert('Content sters cu succes');
+        } catch (uploadError) {
+            setIsLoading(false);
+            setOpen(false);
+            console.error('Eroare la incarcarea documentului:', uploadError.response || uploadError);
+            alert('Eroare la incarcarea documentului');
+        } finally {
+            setIsLoading(false);
+            setOpen(false);
+        }
+    };
+    
 
     useEffect(() => {
         const fetchContent = async () => {
@@ -125,6 +152,58 @@ const MyContent = () => {
 
             {contentList.length === 0 && !isLoading && <p>No content available yet.</p>}
            
+           {/* Delete modal dialog */}
+            <Dialog open={open} onClose={setOpen} className="relative z-10">
+                <DialogBackdrop
+                    transition
+                    className="fixed inset-0 bg-gray-500/75 transition-opacity data-[closed]:opacity-0 data-[enter]:duration-300 data-[leave]:duration-200 data-[enter]:ease-out data-[leave]:ease-in"
+                />
+
+                <div className="fixed inset-0 z-10 w-screen overflow-y-auto">
+                    <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                        <DialogPanel
+                            transition
+                            className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all data-[closed]:translate-y-4 data-[closed]:opacity-0 data-[enter]:duration-300 data-[leave]:duration-200 data-[enter]:ease-out data-[leave]:ease-in sm:my-8 sm:w-full sm:max-w-lg data-[closed]:sm:translate-y-0 data-[closed]:sm:scale-95"
+                        >
+                            <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                            <div className="sm:flex sm:items-start">
+                                <div className="mx-auto flex size-12 shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:size-10">
+                                <ExclamationTriangleIcon aria-hidden="true" className="size-6 text-red-600" />
+                                </div>
+                                <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+                                <DialogTitle as="h3" className="text-base font-semibold text-gray-900">
+                                    Delete content
+                                </DialogTitle>
+                                <div className="mt-2">
+                                    <p className="text-sm text-gray-500">
+                                    Are you sure you want to delete this content?
+                                    This action cannot be undone.
+                                    </p>
+                                </div>
+                                </div>
+                            </div>
+                            </div>
+                            <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                            <button
+                                type="button"
+                                onClick={handleDeleteClick}
+                                className="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto"
+                            >
+                                Delete
+                            </button>
+                            <button
+                                type="button"
+                                data-autofocus
+                                onClick={() => setOpen(false)}
+                                className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
+                            >
+                                Cancel
+                            </button>
+                            </div>
+                        </DialogPanel>
+                        </div>
+                    </div>
+                </Dialog>
 
             {contentList.map((content) => (
                 <div key={content.CID} style={cardStyle}>
@@ -136,6 +215,21 @@ const MyContent = () => {
                         <p style={{ color: '#4b5563' }}>Price: {ethers.formatEther(content.price)} ETH</p>
                         <p style={{ color: '#4b5563' }}>Usage Count: {content.usageCount}</p>
                         <p style={{ color: '#4b5563', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>CID: {content.CID}</p>
+                    </div>
+                    <div className='bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 justify-between'>
+                        <button onClick={() => {setOpen(true); setSelectedContentCid(content.CID)}} className="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto text-center items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-trash" viewBox="0 0 16 16">
+                                <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
+                                <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
+                            </svg>
+                            Delete
+                        </button>
+                        <button className="inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto text-center items-center ">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-pen" viewBox="0 0 16 16">
+                            <path d="m13.498.795.149-.149a1.207 1.207 0 1 1 1.707 1.708l-.149.148a1.5 1.5 0 0 1-.059 2.059L4.854 14.854a.5.5 0 0 1-.233.131l-4 1a.5.5 0 0 1-.606-.606l1-4a.5.5 0 0 1 .131-.232l9.642-9.642a.5.5 0 0 0-.642.056L6.854 4.854a.5.5 0 1 1-.708-.708L9.44.854A1.5 1.5 0 0 1 11.5.796a1.5 1.5 0 0 1 1.998-.001m-.644.766a.5.5 0 0 0-.707 0L1.95 11.756l-.764 3.057 3.057-.764L14.44 3.854a.5.5 0 0 0 0-.708z"/>
+                            </svg>
+                            Edit
+                        </button>
                     </div>
                 </div>
             ))}

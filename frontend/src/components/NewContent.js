@@ -1,5 +1,5 @@
 import axios from 'axios';
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { PhotoIcon } from '@heroicons/react/24/solid'
 
 const NewContent = () => {
@@ -8,6 +8,7 @@ const NewContent = () => {
     const [price, setPrice] = useState(null);
     const [title, setTitle] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const formRef = useRef(null);
 
     // Gestioneaza selectarea fisierului
     const captureFile = (event) => {
@@ -27,6 +28,13 @@ const NewContent = () => {
     const capturePrice = (event) => {
         const selectedPrice = event.target.value;
         setPrice(selectedPrice);
+    };
+
+    // Gestioneaza resetarea formularului
+    const handleReset = () => {
+      console.log('reseting');
+      formRef.current.reset();
+      setFileName('');
     };
 
     // Gestioneaza trimiterea formularului
@@ -63,8 +71,10 @@ const NewContent = () => {
                 },
             });
 
+            handleReset();
             setIsLoading(false);
             alert('Document incarcat cu succes');
+
             console.log('Raspuns server:', result.data);
         } catch (uploadError) {
             console.error('Eroare la incarcarea documentului:', uploadError.response || uploadError);
@@ -86,7 +96,7 @@ const NewContent = () => {
                 </div>
             )}
 
-            <form onSubmit={processForm}>
+            <form onSubmit={processForm} ref={formRef}>
                 <div className="space-y-12">
                     <div className="border-b border-gray-900/10 pb-12">
                         <div className="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-1">

@@ -44,6 +44,7 @@ await w2client.init();
 
 // cors este un middleware
 application.use(cors());
+application.use(express.json());
 
 // multer este pentru file uploads
 const blobStorage = multer.memoryStorage(); // Store file in memory as buffer
@@ -142,6 +143,30 @@ application.get('/api/v1/my-content', async (req, res) => {
     }
 });
 
+
+// Endpoint pentru delete 
+application.post('/api/v1/delete-content', async (req, res) => {
+    // if (!req) {
+    //     return res.status(400).json({ message: 'Wrong cid for content!' });
+    // }
+    try {
+        console.log("req", req.body)
+        console.log("res", res)
+        const { cid } = req.body;
+        console.log("cid", cid);
+        const tx = await contract.removeContent(cid);
+        const receipt = await tx.wait();
+        console.log('Transaction hash:', receipt.hash);
+        res.status(200).json({
+            message: 'Succes!!!'
+        });
+        console.log("gata")
+
+    } catch (error) {
+        console.error('Eroare in timpul stergerii:', error);
+        res.status(500).json({ message: 'Eroare in timpul stergerii' });
+    }
+});
 
 
 // Start the server
