@@ -85,8 +85,13 @@ application.post('/api/v1/authorship-proof', upload.single('file'), async (req, 
     
         const cidString = cid.toString(); 
 
+        const price = req.get('price');
+        const title = req.get('title');
+        console.log("price", price);
+        console.log("title", title)
+
         const platformFee = await contract.getPlatformFee();
-        const tx = await contract.addContent(price, cidString, { value: platformFee });
+        const tx = await contract.addContent(price, cidString, title, { value: platformFee });
         const receipt = await tx.wait();
         console.log('Transaction hash:', receipt.hash);
 

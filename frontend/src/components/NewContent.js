@@ -7,6 +7,7 @@ const NewContent = () => {
     const [proof, setProof] = useState(null);
     const [fileName, setFileName] = useState('');
     const [price, setPrice] = useState(null);
+    const [title, setTitle] = useState('');
 
   // Gestioneaza selectarea fisierului
   const captureFile = (event) => {
@@ -14,6 +15,13 @@ const NewContent = () => {
     setProof(selectedProof);
     setFileName(selectedProof.name);
     console.log('Document selectat:', selectedProof); // Afiseaza documentul selectat
+  };
+
+  // Gestioneaza introducerea titlului
+  const captureTitle = (event) => {
+    const selectedTitle = event.target.value;
+    setTitle(selectedTitle);
+    console.log('Titlul introdus:', selectedTitle); // Afiseaza titlul introdus
   };
 
   // Gestioneaza introducerea pretului
@@ -34,10 +42,24 @@ const NewContent = () => {
 
     console.log('Document de incarcat:', proof); // Afiseaza documentul care urmeaza sa fie incarcat
 
+    if (!title) {
+      alert('Te rugam sa introduci un titlu inainte de trimitere');
+      return;
+    }
+
+    if (!price) {
+      alert('Te rugam sa introduci un pret inainte de trimitere');
+      return;
+    }
+
     const uploadData = new FormData();
     uploadData.append('file', proof);
+    uploadData.append('price', price);
+    uploadData.append('title', title);
+    console.log(price);
 
     try {
+      console.log(uploadData.get('price'))
       const result = await axios.post('http://localhost:8000/api/v1/authorship-proof', uploadData, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -60,7 +82,25 @@ const NewContent = () => {
           <div className="border-b border-gray-900/10 pb-12">
 
             <div className="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-1">
-              <div>
+              <div className="sm:col-span-2">
+                <label htmlFor="title" className="block text-sm/6 font-medium text-gray-900">
+                  Ttile
+                </label>
+                <div className="mt-2">
+                  <div className="flex items-center rounded-md bg-white pl-3 outline outline-1 -outline-offset-1 outline-gray-300 has-[input:focus-within]:outline has-[input:focus-within]:outline-2 has-[input:focus-within]:-outline-offset-2 has-[input:focus-within]:outline-indigo-600">
+                    <input
+                      id="title"
+                      name="title"
+                      type="text"
+                      placeholder="Enter the title of your content"
+                      className="block min-w-0 grow py-1.5 pl-1 pr-3 text-base text-gray-900 placeholder:text-gray-400 focus:outline focus:outline-0 sm:text-sm/6"
+                      onChange={captureTitle}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="sm:col-span-2">
                 <label htmlFor="price" className="block text-sm/6 font-medium text-gray-900">
                   Price
                 </label>
