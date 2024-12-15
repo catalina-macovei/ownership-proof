@@ -241,7 +241,7 @@ describe('ContentManager', function () {
 
       await contentManager.addContent(15, newCid, 'title2', {value: platformFee});
 
-      const gotContent = await contentManager.getAllContents();
+      const gotContent = await contentManager.getAllContentDetails();
 
       expect(gotContent.length).to.equal(2);
 
@@ -255,22 +255,6 @@ describe('ContentManager', function () {
       expect(gotContent[1].usageCount).to.equal(0);
       expect(gotContent[1].title).to.equal('title2');
     });
-
-    it('should get the contents for a creator', async function () {
-      const { contentManager, platformFee, owner, user1, addedCid, addedPrice, addedTitle, newCid } = await loadFixture(deployContractAndSetVariables);
-
-      await contentManager.connect(user1).addContent(15, newCid, 'title2', {value: platformFee});
-
-      const gotContent = await contentManager.getCreatorContents();
-
-      expect(gotContent.length).to.equal(1);
-
-      expect(gotContent[0].creator).to.equal(owner.address);
-      expect(gotContent[0].price).to.equal(addedPrice);
-      expect(gotContent[0].usageCount).to.equal(0);
-      expect(gotContent[0].title).to.equal(addedTitle);
-    });
-    
   });
 
 
