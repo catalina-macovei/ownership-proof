@@ -52,7 +52,7 @@ const upload = multer({ blobStorage });
 
 const fetchContentData = async () => {
     const allContents = await contract.getAllContentDetails();
-    console.log(allContents);
+    // console.log(allContents);
 };
 // apelam functia
 fetchContentData();
@@ -85,13 +85,12 @@ application.post('/api/v1/authorship-proof', upload.single('file'), async (req, 
     
         const cidString = cid.toString(); 
 
-        const price = req.get('price');
-        const title = req.get('title');
-        console.log("price", price);
-        console.log("title", title)
+        const price = req.body.price;
+        const title = req.body.title;
+        const priceFormatted = ethers.parseEther(price);
 
         const platformFee = await contract.getPlatformFee();
-        const tx = await contract.addContent(price, cidString, title, { value: platformFee });
+        const tx = await contract.addContent(priceFormatted, cidString, title, { value: platformFee });
         const receipt = await tx.wait();
         console.log('Transaction hash:', receipt.hash);
 
