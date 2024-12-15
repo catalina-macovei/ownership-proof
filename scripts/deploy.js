@@ -5,7 +5,7 @@ async function main() {
   console.log("Deploying contracts with the account:", deployer.address);
 
   const ContentManager = await ethers.getContractFactory("ContentManager");
-  const platformFee = ethers.parseEther("0.01");
+  const platformFee = ethers.parseEther("0");
   const contentManager = await ContentManager.deploy(deployer.address, platformFee);
   await contentManager.waitForDeployment();
   const contentManagerAddress = await contentManager.getAddress();
