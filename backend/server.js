@@ -49,17 +49,25 @@ application.use(cors());
 const blobStorage = multer.memoryStorage(); // Store file in memory as buffer
 const upload = multer({ blobStorage });
 
+
+const fetchContentData = async () => {
+    const allContents = await contract.getAllContentDetails();
+    console.log(allContents);
+};
+// apelam functia
+fetchContentData();
+
 // definim temporar niste variabile price, platform fee
-const price = 10;
-const platformFee = 2;
+const price = 0;
+const platformFee = 0;
 
 // incerc sa setez platform fee
-const setPlatformFeeTx = await contract.setPlatformFee(2);
-await setPlatformFeeTx.wait();
+//const setPlatformFeeTx = await contract.setPlatformFee(0);
+//await setPlatformFeeTx.wait();
 
 // sa vedem daca a fost setat corect
-const currentFee = await contract.getPlatformFee();
-console.log("Current platform fee:", currentFee.toString());
+//const currentFee = await contract.getPlatformFee();
+//console.log("Current platform fee:", currentFee.toString());
 
 
 // Endpoint pentru upload 
@@ -67,7 +75,6 @@ application.post('/api/v1/authorship-proof', upload.single('file'), async (req, 
     if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
     }
-
     try {
         // convertire buff in Blob
         const fileBlob = new Blob([req.file.buffer], { type: req.file.mimetype });
@@ -94,6 +101,23 @@ application.post('/api/v1/authorship-proof', upload.single('file'), async (req, 
     }
 });
 
+// get all files endpoint
+application.get('/api/v1/content', async (req, res) => {
+    try {
+        const allContents = await contract.getAllContentDetails();
+        const formattedContent = allContents.map(content => ({
+            creator: content[0],
+            price: content[1].toString(),
+            usageCount: content[2].toString(),
+            CID: content[3],
+            fileUrl: `https://${content[3]}.ipfs.w3s.link`
+        }));
+        res.json(formattedContent);
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({ message: 'Error fetching content' });
+    }
+});
 
 
 // Start the server
