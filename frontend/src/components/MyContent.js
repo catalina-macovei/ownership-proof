@@ -90,7 +90,7 @@ const MyContent = () => {
     const handleDeleteClick = async (event) => {
         setIsLoading(true);
         try {
-            const result = await axios.post('http://localhost:8000/api/v1/delete-content', {
+            const result = await axios.post('http://localhost:8000/api/v1/disable-content', {
                 cid: selectedContentCid,
               });
               setIsLoading(false);
@@ -152,7 +152,7 @@ const MyContent = () => {
 
             {contentList.length === 0 && !isLoading && <p>No content available yet.</p>}
            
-           {/* Delete modal dialog */}
+           {/* Disable modal dialog */}
             <Dialog open={open} onClose={setOpen} className="relative z-10">
                 <DialogBackdrop
                     transition
@@ -172,11 +172,11 @@ const MyContent = () => {
                                 </div>
                                 <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
                                 <DialogTitle as="h3" className="text-base font-semibold text-gray-900">
-                                    Delete content
+                                    Disable content
                                 </DialogTitle>
                                 <div className="mt-2">
                                     <p className="text-sm text-gray-500">
-                                    Are you sure you want to delete this content?
+                                    Are you sure you want the content to become unavailable?
                                     This action cannot be undone.
                                     </p>
                                 </div>
@@ -189,7 +189,7 @@ const MyContent = () => {
                                 onClick={handleDeleteClick}
                                 className="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto"
                             >
-                                Delete
+                                Disable
                             </button>
                             <button
                                 type="button"
@@ -218,11 +218,10 @@ const MyContent = () => {
                     </div>
                     <div className='bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 justify-between'>
                         <button onClick={() => {setOpen(true); setSelectedContentCid(content.CID)}} className="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto text-center items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-trash" viewBox="0 0 16 16">
-                                <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
-                                <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-ban" viewBox="0 0 16 16">
+                                <path d="M15 8a6.97 6.97 0 0 0-1.71-4.584l-9.874 9.875A7 7 0 0 0 15 8M2.71 12.584l9.874-9.875a7 7 0 0 0-9.874 9.874ZM16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0"/>
                             </svg>
-                            Delete
+                            Disable
                         </button>
                         <button className="inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto text-center items-center ">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-pen" viewBox="0 0 16 16">

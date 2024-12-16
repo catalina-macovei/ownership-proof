@@ -111,7 +111,7 @@ application.post('/api/v1/authorship-proof', upload.single('file'), async (req, 
 application.get('/api/v1/content', async (req, res) => {
     try {
         const allContents = await contract.getAllContentDetails();
-        const formattedContent = allContents.map(content => ({
+        const formattedContent = allContents.filter(content => content[4] == true).map(content => ({
             creator: content[0],
             price: content[1].toString(),
             usageCount: content[2].toString(),
@@ -129,7 +129,7 @@ application.get('/api/v1/content', async (req, res) => {
 application.get('/api/v1/my-content', async (req, res) => {
     try {
         const allContents = await contract.getAllContentDetails();
-        const formattedContent = allContents.filter(c => c[0] == signer.address).map(content => ({
+        const formattedContent = allContents.filter(c => c[0] == signer.address && c[4] == true).map(content => ({
             creator: content[0],
             price: content[1].toString(),
             usageCount: content[2].toString(),
@@ -144,27 +144,20 @@ application.get('/api/v1/my-content', async (req, res) => {
 });
 
 
-// Endpoint pentru delete 
-application.post('/api/v1/delete-content', async (req, res) => {
-    // if (!req) {
-    //     return res.status(400).json({ message: 'Wrong cid for content!' });
-    // }
+// Endpoint pentru disable content 
+application.post('/api/v1/disable-content', async (req, res) => {
     try {
-        console.log("req", req.body)
-        console.log("res", res)
         const { cid } = req.body;
-        console.log("cid", cid);
-        const tx = await contract.removeContent(cid);
+        const tx = await contract.setUnavailableContent(cid);
         const receipt = await tx.wait();
         console.log('Transaction hash:', receipt.hash);
         res.status(200).json({
             message: 'Succes!!!'
         });
-        console.log("gata")
 
     } catch (error) {
-        console.error('Eroare in timpul stergerii:', error);
-        res.status(500).json({ message: 'Eroare in timpul stergerii' });
+        console.error('Eroare in timpul setarii continutului ca indisponibil', error);
+        res.status(500).json({ message: 'Eroare in timpul setarii continutului ca indisponibil' });
     }
 });
 
