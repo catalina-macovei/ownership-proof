@@ -107,33 +107,39 @@ describe('ContentManager', function () {
   });
 
 
-  // test removeContent
+  // test setUnavailableContent
 
-  describe('Content Removal', function () {
-    it('should delete the content', async function () {
+  describe('Content disabling', function () {
+    it('should set the content as unavailable', async function () {
       const { contentManager, platformFee, owner, user1, addedCid, addedPrice, addedTitle, newCid } = await loadFixture(deployContractAndSetVariables);
 
-      await contentManager.removeContent(addedCid);
+      const initialContent = await contentManager.getContent(addedCid);
+      
+      expect(initialContent.isAvailable).to.equal(true);
 
-      await expect(contentManager.getContent(addedCid)).to.be.revertedWith('Content not found!');
+      await contentManager.setUnavailableContent(addedCid);
+
+      const updatedContent = await contentManager.getContent(addedCid);
+
+      expect(updatedContent.isAvailable).to.equal(false);
     });
 
-    it('should emit ContentRemove event after deleting the content', async function () {
+    it('should emit ContentIsAvailableChanged event after setting the content as unavailable', async function () {
       const { contentManager, platformFee, owner, user1, addedCid, addedPrice, addedTitle, newCid } = await loadFixture(deployContractAndSetVariables);
 
-      await expect(contentManager.removeContent(addedCid)).to.emit(contentManager, "ContentRemoved").withArgs(owner, addedCid);
+      await expect(contentManager.setUnavailableContent(addedCid)).to.emit(contentManager, "ContentIsAvailableChanged").withArgs(owner, addedCid);
     });
 
-    it('should not allow removal of inexistent content', async function () {
+    it('should not allow setting as unavailable inexistent content', async function () {
       const { contentManager, platformFee, owner, user1, addedCid, addedPrice, addedTitle, newCid } = await loadFixture(deployContractAndSetVariables);
 
-      await expect(contentManager.removeContent(newCid)).to.be.revertedWith('Content not found!');
+      await expect(contentManager.setUnavailableContent(newCid)).to.be.revertedWith('Content not found!');
     });
 
-    it('should not allow removal of not owned content', async function () {
+    it('should not allow setting as unaavilable not owned content', async function () {
       const { contentManager, platformFee, owner, user1, addedCid, addedPrice, addedTitle, newCid } = await loadFixture(deployContractAndSetVariables);
 
-      await expect(contentManager.connect(user1).removeContent(addedCid)).to.be.revertedWith('Action allowed only for the creator of the content!');
+      await expect(contentManager.connect(user1).setUnavailableContent(addedCid)).to.be.revertedWith('Action allowed only for the creator of the content!');
     });
   });
 

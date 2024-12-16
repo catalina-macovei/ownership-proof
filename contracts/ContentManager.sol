@@ -17,7 +17,7 @@ contract ContentManager is Ownable {
     }
 
     event ContentAdded(address creator, string CID);
-    event ContentRemoved(address creator, string CID);
+    event ContentIsAvailableChanged(address creator, string CID);
     event ContentPriceChanged(string CID, uint oldPrice, uint newPrice);
     event ContentTitleChanged(string CID, string oldTitle, string newTitle);
     event ContentUsageCountChanged(string CID, uint oldUsageCount, uint newUsageCount);
@@ -29,6 +29,7 @@ contract ContentManager is Ownable {
         uint usageCount;
         string CID;
         string title;
+        bool isAvailable;
     }
 
     mapping(string => Content) private contents;
@@ -44,7 +45,7 @@ contract ContentManager is Ownable {
 
     function addContent(uint price, string memory CID, string memory title) public payable {
         
-        require (contents[CID].creator == address(0), "Content is already on the platform!");
+        require (contents[CID].creator == address(0) && !contents[CID].isAvailable, "Content is already on the platform!");
 
         require(msg.value == platformFee, "You must pay the platform fee to upload content");
 
@@ -58,34 +59,25 @@ contract ContentManager is Ownable {
             price: price,
             usageCount: 0,
             CID: CID,
-            title: title
+            title: title,
+            isAvailable: true
         });
         contentCIDs.push(CID); // Store CID in the list
 
         emit ContentAdded(msg.sender, CID);
     }
 
-    function removeContent(string memory CID) public OnlyExistentContent(CID) OnlyCreator(contents[CID].creator) {
-        // Remove content from mapping
-        delete contents[CID];
+    function setUnavailableContent(string memory CID) public OnlyExistentContent(CID) OnlyCreator(contents[CID].creator) {
+        contents[CID].isAvailable = false;
 
-        // Remove CID from the list
-        for (uint i = 0; i < contentCIDs.length; i++) {
-            if (keccak256(abi.encodePacked(contentCIDs[i])) == keccak256(abi.encodePacked(CID))) {
-                contentCIDs[i] = contentCIDs[contentCIDs.length - 1];
-                contentCIDs.pop();
-                break;
-            }
-        }
-
-        emit ContentRemoved(msg.sender, CID);
+        emit ContentIsAvailableChanged(msg.sender, CID);
     }
 
-    function getContent(string memory CID) public view OnlyExistentContent(CID) returns (address creator, uint price, uint usageCount, string memory title) {
+    function getContent(string memory CID) public view OnlyExistentContent(CID) returns (address creator, uint price, uint usageCount, string memory title, bool isAvailable) {
 
         Content memory content = contents[CID];
 
-        return (content.creator, content.price, content.usageCount, content.title);
+        return (content.creator, content.price, content.usageCount, content.title, content.isAvailable);
     }
 
     function getAllContentCIDs() public view returns (string[] memory) {
