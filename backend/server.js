@@ -111,7 +111,7 @@ application.post('/api/v1/authorship-proof', upload.single('file'), async (req, 
 application.get('/api/v1/content', async (req, res) => {
     try {
         const allContents = await contract.getAllContentDetails();
-        const formattedContent = allContents.filter(content => content[4] == true).map(content => ({
+        const formattedContent = allContents.filter(content => content[5] == true).map(content => ({
             creator: content[0],
             price: content[1].toString(),
             usageCount: content[2].toString(),
@@ -129,7 +129,7 @@ application.get('/api/v1/content', async (req, res) => {
 application.get('/api/v1/my-content', async (req, res) => {
     try {
         const allContents = await contract.getAllContentDetails();
-        const formattedContent = allContents.filter(c => c[0] == signer.address && c[4] == true).map(content => ({
+        const formattedContent = allContents.filter(c => c[0] == signer.address && c[5] == true).map(content => ({
             creator: content[0],
             price: content[1].toString(),
             usageCount: content[2].toString(),

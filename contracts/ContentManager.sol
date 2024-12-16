@@ -45,7 +45,7 @@ contract ContentManager is Ownable {
 
     function addContent(uint price, string memory CID, string memory title) public payable {
         
-        require (contents[CID].creator == address(0) && !contents[CID].isAvailable, "Content is already on the platform!");
+        require (contents[CID].creator == address(0) && contents[CID].isAvailable == false, "Content is already on the platform!");
 
         require(msg.value == platformFee, "You must pay the platform fee to upload content");
 

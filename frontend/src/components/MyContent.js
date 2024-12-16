@@ -95,7 +95,7 @@ const MyContent = () => {
               });
               setIsLoading(false);
               setOpen(false);
-              alert('Content sters cu succes');
+              alert('Continut setat ca indisponibil');
         } catch (uploadError) {
             setIsLoading(false);
             setOpen(false);
