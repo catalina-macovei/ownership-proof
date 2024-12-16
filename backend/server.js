@@ -116,7 +116,8 @@ application.get('/api/v1/content', async (req, res) => {
             price: content[1].toString(),
             usageCount: content[2].toString(),
             CID: content[3],
-            fileUrl: `https://${content[3]}.ipfs.w3s.link`
+            fileUrl: `https://${content[3]}.ipfs.w3s.link`,
+            title: content[4]
         }));
         res.json(formattedContent);
     } catch (error) {
@@ -134,7 +135,8 @@ application.get('/api/v1/my-content', async (req, res) => {
             price: content[1].toString(),
             usageCount: content[2].toString(),
             CID: content[3],
-            fileUrl: `https://${content[3]}.ipfs.w3s.link`
+            fileUrl: `https://${content[3]}.ipfs.w3s.link`,
+            title: content[4]
         }));
         res.json(formattedContent);
     } catch (error) {
@@ -154,6 +156,45 @@ application.post('/api/v1/disable-content', async (req, res) => {
         res.status(200).json({
             message: 'Succes!!!'
         });
+
+    } catch (error) {
+        console.error('Eroare in timpul setarii continutului ca indisponibil', error);
+        res.status(500).json({ message: 'Eroare in timpul setarii continutului ca indisponibil' });
+    }
+});
+
+// Endpoint pentru disable content 
+application.post('/api/v1/set-title', async (req, res) => {
+    try {
+        console.log(req.body);
+        const cid = req.body.cid;
+        const title = req.body.title;
+        console.log("title", title);
+        // const tx = await contract.setTitle(cid, title);
+        // const receipt = await tx.wait();
+        // console.log('Transaction hash:', receipt.hash);
+        // res.status(200).json({
+        //     message: 'Succes!!!'
+        // });
+
+    } catch (error) {
+        console.error('Eroare in timpul setarii titlului', error);
+        res.status(500).json({ message: 'Eroare in timpul setarii titlului' });
+    }
+});
+
+// Endpoint pentru disable content 
+application.post('/api/v1/set-price', async (req, res) => {
+    try {
+        const { cid } = req.body.cid;
+        const price = req.body.price;
+        console.log("price", price);
+        // const tx = await contract.setPrice(cid, price);
+        // const receipt = await tx.wait();
+        // console.log('Transaction hash:', receipt.hash);
+        // res.status(200).json({
+        //     message: 'Succes!!!'
+        // });
 
     } catch (error) {
         console.error('Eroare in timpul setarii continutului ca indisponibil', error);
