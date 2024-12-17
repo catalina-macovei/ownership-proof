@@ -20,6 +20,7 @@ logs
 *.log
 *.pid
 *.pid.lock
+yarn.lock
 
 # Build and output directories
 build/
