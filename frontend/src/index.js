@@ -1,12 +1,10 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import App from "./App";
 import { MetaMaskProvider } from "@metamask/sdk-react";
 import './index.css';
 import reportWebVitals from './reportWebVitals';
 import { RouterProvider} from "react-router-dom"
 import router from "./routes/router"
-import ConnectMetamask from "./components/ConnectMetamask";
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
@@ -19,9 +17,8 @@ root.render(
         },
         infuraAPIKey: process.env.INFURA_API_KEY,
       }}>
+      <RouterProvider router={router} />
     </MetaMaskProvider>
-    < ConnectMetamask />
-    {/* <RouterProvider router={router} /> */}
   </React.StrictMode>
 );
 
