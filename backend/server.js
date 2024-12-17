@@ -164,18 +164,16 @@ application.post('/api/v1/disable-content', async (req, res) => {
 });
 
 // Endpoint pentru disable content 
-application.post('/api/v1/set-title', async (req, res) => {
+application.post('/api/v1/set-title', upload.none(), async (req, res) => {
     try {
-        console.log(req.body);
         const cid = req.body.cid;
         const title = req.body.title;
-        console.log("title", title);
-        // const tx = await contract.setTitle(cid, title);
-        // const receipt = await tx.wait();
-        // console.log('Transaction hash:', receipt.hash);
-        // res.status(200).json({
-        //     message: 'Succes!!!'
-        // });
+        const tx = await contract.setTitle(cid, title);
+        const receipt = await tx.wait();
+        console.log('Transaction hash:', receipt.hash);
+        res.status(200).json({
+            message: 'Succes!!!'
+        });
 
     } catch (error) {
         console.error('Eroare in timpul setarii titlului', error);
@@ -184,17 +182,17 @@ application.post('/api/v1/set-title', async (req, res) => {
 });
 
 // Endpoint pentru disable content 
-application.post('/api/v1/set-price', async (req, res) => {
+application.post('/api/v1/set-price', upload.none(), async (req, res) => {
     try {
-        const { cid } = req.body.cid;
+        const cid = req.body.cid;
         const price = req.body.price;
-        console.log("price", price);
-        // const tx = await contract.setPrice(cid, price);
-        // const receipt = await tx.wait();
-        // console.log('Transaction hash:', receipt.hash);
-        // res.status(200).json({
-        //     message: 'Succes!!!'
-        // });
+        const priceFormatted = ethers.parseEther(price);
+        const tx = await contract.setPrice(cid, priceFormatted);
+        const receipt = await tx.wait();
+        console.log('Transaction hash:', receipt.hash);
+        res.status(200).json({
+            message: 'Succes!!!'
+        });
 
     } catch (error) {
         console.error('Eroare in timpul setarii continutului ca indisponibil', error);

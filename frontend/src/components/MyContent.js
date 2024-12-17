@@ -145,7 +145,6 @@ const MyContent = () => {
 
         try {
             setIsLoading(true);
-
             if(selectedContent.title !== title) {
                 uploadData.append('title', title);
                 result = await axios.post('http://localhost:8000/api/v1/set-title', uploadData);
@@ -154,7 +153,7 @@ const MyContent = () => {
                 uploadData.append('price', price);
                 result = await axios.post('http://localhost:8000/api/v1/set-price', uploadData);
             }
-
+            setOpenEdit(false);
             setIsLoading(false);
             alert('Modificari efectuate cu succes');
 
@@ -361,6 +360,7 @@ const MyContent = () => {
                 <div key={content.CID} style={cardStyle}>
                     <FilePreview fileUrl={content.fileUrl} />
                     <div style={{ marginTop: '1rem' }}>
+                    <p style={{ color: '#4b5563' }}>Title: {content.title}</p>
                         <p style={{ color: '#4b5563', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>
                             Creator: {content.creator}
                         </p>

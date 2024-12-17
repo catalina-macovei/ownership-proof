@@ -130,6 +130,7 @@ const DisplayContent = () => {
                 <div key={content.CID} style={cardStyle}>
                     <FilePreview fileUrl={content.fileUrl} />
                     <div style={{ marginTop: '1rem' }}>
+                    <p style={{ color: '#4b5563' }}>Title: {content.title}</p>
                         <p style={{ color: '#4b5563', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>
                             Creator: {content.creator}
                         </p>
