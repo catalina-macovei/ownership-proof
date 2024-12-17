@@ -1,9 +1,6 @@
 import React, { useState } from 'react';
 import { useSDK } from "@metamask/sdk-react";
 
-
-// export const ApiContext = React.createContext({});
-
 function ConnectMetamask() {
     const [account, setAccount] = useState();
     const { sdk, connected, connecting, chainId } = useSDK();
