@@ -5,6 +5,7 @@ import { createBrowserRouter} from "react-router-dom"
 import NewContent from "../components/NewContent"
 import DisplayContent from "../components/DisplayContent"
 import MyContent from "../components/MyContent"
+import ConnectMetamask from "../components/ConnectMetamask"
 
 const routes = [
   {
@@ -14,6 +15,10 @@ const routes = [
       {
         index: true,
         element: <Welcome />
+      },
+      {
+        path: "connect-wallet",
+        element: <ConnectMetamask />
       },
       {
         path: "add-content",
