@@ -9,16 +9,21 @@ import { createRequire } from 'module';
 
 const require = createRequire(import.meta.url);
 const ContentManager = require('../artifacts/contracts/ContentManager.sol/ContentManager.json');
+const LicenceManager = require('../artifacts/contracts/LicenceManager.sol/LicenceManager.json');
 dotenv.config();
 
 console.log('Environment variables loaded:', {
     hasRpcUrl: !!process.env.SEPOLIA_RPC_URL,
     hasPrivateKey: !!process.env.PRIVATE_KEY,
-    hasContractAddress: !!process.env.CONTENT_MANAGER
+    hasContentManagerContractAddress: !!process.env.CONTENT_MANAGER,
+    hasLicenceManagerContractAddress: !!process.env.LICENCE_MANAGER
 });
 
-console.log('Contract ABI:', ContentManager.abi ? 'Loaded' : 'Not loaded');
-console.log('Contract Address:', process.env.CONTENT_MANAGER);
+console.log('Contract ABI for ContentManager:', ContentManager.abi ? 'Loaded' : 'Not loaded');
+console.log('ContentManager Contract Address:', process.env.CONTENT_MANAGER);
+
+console.log('Contract ABI for LicenceManager:', LicenceManager.abi ? 'Loaded' : 'Not loaded');
+console.log('LicenceManager Contract Address:', process.env.LICENCE_MANAGER);
 
 const provider = new ethers.JsonRpcProvider(process.env.SEPOLIA_RPC_URL);
 const privateKey = process.env.PRIVATE_KEY.startsWith('0x') 
@@ -27,9 +32,14 @@ const privateKey = process.env.PRIVATE_KEY.startsWith('0x')
 
 // initializare contract, load from abi
 const signer = new ethers.Wallet(privateKey, provider);
-const contract = new ethers.Contract(
+const contractContent = new ethers.Contract(
     process.env.CONTENT_MANAGER,
     ContentManager.abi,
+    signer
+);
+const contractLicence = new ethers.Contract(
+    process.env.LICENCE_MANAGER,
+    LicenceManager.abi,
     signer
 );
 
@@ -52,7 +62,7 @@ const upload = multer({ blobStorage });
 
 
 const fetchContentData = async () => {
-    const allContents = await contract.getAllContentDetails();
+    const allContents = await contractContent.getAllContentDetails();
     // console.log(allContents);
 };
 // apelam functia
@@ -90,8 +100,8 @@ application.post('/api/v1/authorship-proof', upload.single('file'), async (req, 
         const title = req.body.title;
         const priceFormatted = ethers.parseEther(price);
 
-        const platformFee = await contract.getPlatformFee();
-        const tx = await contract.addContent(priceFormatted, cidString, title, { value: platformFee });
+        const platformFee = await contractContent.getPlatformFee();
+        const tx = await contractContent.addContent(priceFormatted, cidString, title, { value: platformFee });
         const receipt = await tx.wait();
         console.log('Transaction hash:', receipt.hash);
 
@@ -110,7 +120,7 @@ application.post('/api/v1/authorship-proof', upload.single('file'), async (req, 
 // get all files endpoint
 application.get('/api/v1/content', async (req, res) => {
     try {
-        const allContents = await contract.getAllContentDetails();
+        const allContents = await contractContent.getAllContentDetails();
         const formattedContent = allContents.filter(content => content[5] == true).map(content => ({
             creator: content[0],
             price: content[1].toString(),
@@ -129,7 +139,7 @@ application.get('/api/v1/content', async (req, res) => {
 // get all files for a creator endpoint
 application.get('/api/v1/my-content', async (req, res) => {
     try {
-        const allContents = await contract.getAllContentDetails();
+        const allContents = await contractContent.getAllContentDetails();
         const formattedContent = allContents.filter(c => c[0] == signer.address && c[5] == true).map(content => ({
             creator: content[0],
             price: content[1].toString(),
@@ -150,7 +160,7 @@ application.get('/api/v1/my-content', async (req, res) => {
 application.post('/api/v1/disable-content', async (req, res) => {
     try {
         const { cid } = req.body;
-        const tx = await contract.setUnavailableContent(cid);
+        const tx = await contractContent.setUnavailableContent(cid);
         const receipt = await tx.wait();
         console.log('Transaction hash:', receipt.hash);
         res.status(200).json({
@@ -163,12 +173,12 @@ application.post('/api/v1/disable-content', async (req, res) => {
     }
 });
 
-// Endpoint pentru disable content 
+// Endpoint pentru setarea titlului
 application.post('/api/v1/set-title', upload.none(), async (req, res) => {
     try {
         const cid = req.body.cid;
         const title = req.body.title;
-        const tx = await contract.setTitle(cid, title);
+        const tx = await contractContent.setTitle(cid, title);
         const receipt = await tx.wait();
         console.log('Transaction hash:', receipt.hash);
         res.status(200).json({
@@ -181,13 +191,13 @@ application.post('/api/v1/set-title', upload.none(), async (req, res) => {
     }
 });
 
-// Endpoint pentru disable content 
+// Endpoint pentru setarea pretului 
 application.post('/api/v1/set-price', upload.none(), async (req, res) => {
     try {
         const cid = req.body.cid;
         const price = req.body.price;
         const priceFormatted = ethers.parseEther(price);
-        const tx = await contract.setPrice(cid, priceFormatted);
+        const tx = await contractContent.setPrice(cid, priceFormatted);
         const receipt = await tx.wait();
         console.log('Transaction hash:', receipt.hash);
         res.status(200).json({
@@ -197,6 +207,33 @@ application.post('/api/v1/set-price', upload.none(), async (req, res) => {
     } catch (error) {
         console.error('Eroare in timpul setarii continutului ca indisponibil', error);
         res.status(500).json({ message: 'Eroare in timpul setarii continutului ca indisponibil' });
+    }
+});
+
+
+// Endpoint pentru cumpararea licentei 
+application.post('/api/v1/buy-licence', upload.none(), async (req, res) => {
+    try {
+        const cid = req.body.cid;
+        const duration = req.body.duration;
+
+        const content = await contractContent.getContent(cid);
+        const price = content[1];
+
+        const payTx = await contractLicence.pay(cid, { value: price });
+        const payReceipt = await payTx.wait();
+        console.log('Transaction hash:', payReceipt.hash);
+
+        const licenceTx = await contractLicence.issueLicence(signer.address, cid, duration);
+        const licenceReceipt = await licenceTx.wait();
+        console.log('Transaction hash:', licenceReceipt.hash);
+
+        res.status(200).json({
+            message: 'Succes!!!'
+        });
+    } catch (error) {
+        console.error('Eroare in timpul cumpararii licentei:', error);
+        res.status(500).json({ message: 'Eroare in timpul cumpararii licentei' });
     }
 });
 
