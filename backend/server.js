@@ -191,6 +191,17 @@ application.post('/api/v1/set-title', upload.none(), async (req, res) => {
     }
 });
 
+// Endpoint pentru preluarea taxei
+application.get('/api/v1/fee', async (req, res) => {
+    try {
+        const fee = await contractContent.getPlatformFee();
+        res.json(fee.toString());
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({ message: 'Error fetching platform fee' });
+    }
+});
+
 // Endpoint pentru setarea pretului 
 application.post('/api/v1/set-price', upload.none(), async (req, res) => {
     try {
@@ -269,6 +280,24 @@ application.post('/api/v1/revoke-licence', async (req, res) => {
     } catch (error) {
         console.error('Eroare in timpul revocarii licentei', error);
         res.status(500).json({ message: 'Eroare in timpul revocarii licentei' });
+    }
+});
+
+// Endpoint pentru setarea taxei 
+application.post('/api/v1/set-fee', async (req, res) => {
+    try {
+        const { fee } = req.body;
+        const feeFormatted = ethers.parseEther(fee);
+        const tx = await contractContent.setPlatformFee(feeFormatted);
+        const receipt = await tx.wait();
+        console.log('Transaction hash:', receipt.hash);
+        res.status(200).json({
+            message: 'Succes!!!'
+        });
+
+    } catch (error) {
+        console.error('Eroare in timpul setarii taxei platformei', error);
+        res.status(500).json({ message: 'Eroare in timpul setarii taxei platformei' });
     }
 });
 
