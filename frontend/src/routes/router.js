@@ -6,6 +6,7 @@ import NewContent from "../components/NewContent"
 import DisplayContent from "../components/DisplayContent"
 import MyContent from "../components/MyContent"
 import ConnectMetamask from "../components/ConnectMetamask"
+import MyLicences from "../components/MyLicences"
 
 const routes = [
   {
@@ -31,6 +32,10 @@ const routes = [
       {
         path: "my-content",
         element: <MyContent />
+      },
+      {
+        path: "my-licences",
+        element: <MyLicences />
       },
     ],
   },

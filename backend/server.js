@@ -215,7 +215,7 @@ application.post('/api/v1/set-price', upload.none(), async (req, res) => {
 application.post('/api/v1/buy-licence', upload.none(), async (req, res) => {
     try {
         const cid = req.body.cid;
-        const duration = req.body.duration;
+        const duration = req.body.duration * 24 * 60 * 60; // in seconds
 
         const content = await contractContent.getContent(cid);
         const price = content[1];
@@ -240,16 +240,16 @@ application.post('/api/v1/buy-licence', upload.none(), async (req, res) => {
 // get all files for a creator endpoint
 application.get('/api/v1/my-licences', async (req, res) => {
     try {
-        const allContents = await contractContent.getAllContentDetails();
-        const formattedContent = allContents.filter(c => c[0] == signer.address && c[5] == true).map(content => ({
-            creator: content[0],
-            price: content[1].toString(),
-            usageCount: content[2].toString(),
-            CID: content[3],
-            fileUrl: `https://${content[3]}.ipfs.w3s.link`,
-            title: content[4]
+        const requestedLicences = await contractLicence.getLicencesForUser(signer.address);
+        console.log(requestedLicences[0]);
+        const formattedLicences = requestedLicences.map(licence => ({
+            issueDate: (new Date(Number(licence[0]) * 1000)).toLocaleString(),
+            expiryDate: (new Date(Number(licence[1]) * 1000)).toLocaleString(),
+            CID: licence[2],
+            userId: licence[3].toString(),
+            isValid: licence[4]
         }));
-        res.json(formattedContent);
+        res.json(formattedLicences);
     } catch (error) {
         console.error('Error:', error);
         res.status(500).json({ message: 'Error fetching licences' });
