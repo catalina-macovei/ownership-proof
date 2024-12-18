@@ -82,7 +82,6 @@ const FilePreview = ({ fileUrl }) => {
 
 
 const MyLicences = () => {
-    const [contentList, setContentList] = useState([]);
     const [licencesList, setLicencesList] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [openModal, setOpenModal] = useState(false);
@@ -117,13 +116,10 @@ const MyLicences = () => {
                 // get content for file preview
                 const responseContent = await fetch('http://localhost:8000/api/v1/content');
                 const dataContent = await responseContent.json();
-                console.log("dataContetn", dataContent);
-                setContentList(dataContent);
 
                 // get licences for user
                 const responseLicences = await fetch('http://localhost:8000/api/v1/my-licences');
                 const dataLicence = await responseLicences.json();
-                console.log("DataLicence", dataLicence);
 
                 // pair licences with content images
                 licenceContent = {};
@@ -131,8 +127,6 @@ const MyLicences = () => {
                     dataLicence[i]['fileUrl'] = dataContent.find(content => content.CID === dataLicence[i].CID)?.fileUrl;
                 }
                 setLicencesList(dataLicence);
-                console.log("dict", licenceContent);
-                console.log("image", dataLicence[0].fileUrl);
 
                 setIsLoading(false);
             } catch (error) {
@@ -232,7 +226,7 @@ const MyLicences = () => {
                         <p style={{ color: '#4b5563' }}>Expiry date: {licence.expiryDate}</p>
                         <p style={{ color: '#4b5563', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>CID: {licence.CID}</p>
                     </div>
-                    <button
+                    {licence.isValid && <button
                             type="button"
                             className="mt-6 inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto text-center items-center"
                             onClick={() => {setSelectedLicenceCid(licence.CID); setOpenModal(true)}}
@@ -241,7 +235,12 @@ const MyLicences = () => {
                             <path d="m13.498.795.149-.149a1.207 1.207 0 1 1 1.707 1.708l-.149.148a1.5 1.5 0 0 1-.059 2.059L4.854 14.854a.5.5 0 0 1-.233.131l-4 1a.5.5 0 0 1-.606-.606l1-4a.5.5 0 0 1 .131-.232l9.642-9.642a.5.5 0 0 0-.642.056L6.854 4.854a.5.5 0 1 1-.708-.708L9.44.854A1.5 1.5 0 0 1 11.5.796a1.5 1.5 0 0 1 1.998-.001m-.644.766a.5.5 0 0 0-.707 0L1.95 11.756l-.764 3.057 3.057-.764L14.44 3.854a.5.5 0 0 0 0-.708z"/>
                             </svg>
                             Revoke licence
-                        </button>
+                        </button>}
+                    {!licence.isValid && <span 
+                        class="mt-6 inline-flex justify-center text-center items-center rounded-md bg-red-50 px-2 py-1 text-m font-medium text-red-700 ring-1 ring-inset ring-red-600/10"
+                        >
+                            Invalid licence
+                        </span>}    
                 </div>
             ))}
         </div>

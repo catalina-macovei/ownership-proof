@@ -241,7 +241,6 @@ application.post('/api/v1/buy-licence', upload.none(), async (req, res) => {
 application.get('/api/v1/my-licences', async (req, res) => {
     try {
         const requestedLicences = await contractLicence.getLicencesForUser(signer.address);
-        console.log(requestedLicences[0]);
         const formattedLicences = requestedLicences.map(licence => ({
             issueDate: (new Date(Number(licence[0]) * 1000)).toLocaleString(),
             expiryDate: (new Date(Number(licence[1]) * 1000)).toLocaleString(),
@@ -253,6 +252,23 @@ application.get('/api/v1/my-licences', async (req, res) => {
     } catch (error) {
         console.error('Error:', error);
         res.status(500).json({ message: 'Error fetching licences' });
+    }
+});
+
+// Endpoint pentru revoke licence
+application.post('/api/v1/revoke-licence', async (req, res) => {
+    try {
+        const { cid } = req.body;
+        const tx = await contractLicence.revokeLicence(cid);
+        const receipt = await tx.wait();
+        console.log('Transaction hash:', receipt.hash);
+        res.status(200).json({
+            message: 'Succes!!!'
+        });
+
+    } catch (error) {
+        console.error('Eroare in timpul revocarii licentei', error);
+        res.status(500).json({ message: 'Eroare in timpul revocarii licentei' });
     }
 });
 
