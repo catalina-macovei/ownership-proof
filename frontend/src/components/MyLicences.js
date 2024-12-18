@@ -237,7 +237,7 @@ const MyLicences = () => {
                             Revoke licence
                         </button>}
                     {!licence.isValid && <span 
-                        class="mt-6 inline-flex justify-center text-center items-center rounded-md bg-red-50 px-2 py-1 text-m font-medium text-red-700 ring-1 ring-inset ring-red-600/10"
+                        className="mt-6 inline-flex justify-center text-center items-center rounded-md bg-red-50 px-2 py-1 text-m font-medium text-red-700 ring-1 ring-inset ring-red-600/10"
                         >
                             Invalid licence
                         </span>}    

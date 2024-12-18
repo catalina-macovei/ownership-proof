@@ -84,7 +84,7 @@ const DisplayContent = () => {
     const [contentList, setContentList] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [selectedContentCid, setSelectedContentCid] = useState('');
-    const [duration, setDuration] = useState(0);
+    const [duration, setDuration] = useState(1);
     const [openModal, setOpenModal] = useState(false);
 
     useEffect(() => {
@@ -119,14 +119,17 @@ const DisplayContent = () => {
             return;
         }
 
+        if (duration < 1) {
+            alert('Durata trebuie sa fie de cel putin o zi');
+            return;
+        }
+
         try {
             setIsLoading(true);
             const uploadData = new FormData();
             uploadData.append('cid', selectedContentCid);
             uploadData.append('duration', duration);
             const result = await axios.post('http://localhost:8000/api/v1/buy-licence', uploadData);
-            setOpenModal(false);
-            setIsLoading(false);
             alert('Cumpararea licentei a fost efectuata cu succes');
 
             console.log('Raspuns server:', result.data);
@@ -134,6 +137,7 @@ const DisplayContent = () => {
             console.error('Eroare la cumpararea licentei:', uploadError.response || uploadError);
             alert('Eroare la cumpararea licentei');
         } finally {
+            setOpenModal(false);
             setIsLoading(false);
         }
     }
@@ -201,6 +205,7 @@ const DisplayContent = () => {
                                                     name="duration"
                                                     type="number"
                                                     min="1"
+                                                    value={duration}
                                                     className="block min-w-0 grow py-1.5 pl-1 pr-3 text-base text-gray-900 placeholder:text-gray-400 focus:outline focus:outline-0 sm:text-sm/6"
                                                     onChange={captureDuration}
                                                     disabled={isLoading}
