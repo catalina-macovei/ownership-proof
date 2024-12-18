@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
-import axios from 'axios';
 import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react'
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline'
+import axios from 'axios';
 
 const FilePreview = ({ fileUrl }) => {
     const [fileType, setFileType] = useState(null);
@@ -80,68 +80,63 @@ const FilePreview = ({ fileUrl }) => {
     );
 };
 
-const DisplayContent = () => {
-    const [contentList, setContentList] = useState([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const [selectedContentCid, setSelectedContentCid] = useState('');
-    const [duration, setDuration] = useState(1);
-    const [openModal, setOpenModal] = useState(false);
 
+const MyLicences = () => {
+    const [licencesList, setLicencesList] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [openModal, setOpenModal] = useState(false);
+    const [selectedLicenceCid, setSelectedLicenceCid] = useState(null);
+    let licenceContent = {};
+
+    const handleRevokeClick = async (event) => {
+        setIsLoading(true);
+        try {
+            const result = await axios.post('http://localhost:8000/api/v1/revoke-licence', {
+                cid: selectedLicenceCid,
+              });
+              setIsLoading(false);
+              setOpenModal(false);
+              alert('Licenta revocata');
+        } catch (uploadError) {
+            setIsLoading(false);
+            setOpenModal(false);
+            console.error('Eroare la revocarea licentei:', uploadError.response || uploadError);
+            alert('Eroare la revocarea licentei');
+        } finally {
+            setIsLoading(false);
+            setOpenModal(false);
+        }
+    };
+    
     useEffect(() => {
-        const fetchContent = async () => {
+        const fetchLicences = async () => {
             try {
                 setIsLoading(true);
-                const response = await fetch('http://localhost:8000/api/v1/content');
-                const data = await response.json();
-                setContentList(data);
+
+                // get content for file preview
+                const responseContent = await fetch('http://localhost:8000/api/v1/content');
+                const dataContent = await responseContent.json();
+
+                // get licences for user
+                const responseLicences = await fetch('http://localhost:8000/api/v1/my-licences');
+                const dataLicence = await responseLicences.json();
+
+                // pair licences with content images
+                licenceContent = {};
+                for(let i = 0; i < dataLicence.length; i++) {
+                    dataLicence[i]['fileUrl'] = dataContent.find(content => content.CID === dataLicence[i].CID)?.fileUrl;
+                }
+                setLicencesList(dataLicence);
+
                 setIsLoading(false);
             } catch (error) {
-                console.error('Error fetching content:', error);
+                console.error('Error fetching licences:', error);
                 setIsLoading(false);
             }
         };
 
-        fetchContent();
+        fetchLicences();
     }, []);
-
-    
-    // Gestioneaza introducerea pretului
-    const captureDuration = (event) => {
-        const selectedDuration = event.target.value;
-        setDuration(selectedDuration);
-    };
-
-    const handleBuyLicence = async (event) => {
-        event.preventDefault();
-
-        if (!duration) {
-            alert('Te rugam sa introduci o durata inainte de trimitere');
-            return;
-        }
-
-        if (duration < 1) {
-            alert('Durata trebuie sa fie de cel putin o zi');
-            return;
-        }
-
-        try {
-            setIsLoading(true);
-            const uploadData = new FormData();
-            uploadData.append('cid', selectedContentCid);
-            uploadData.append('duration', duration);
-            const result = await axios.post('http://localhost:8000/api/v1/buy-licence', uploadData);
-            alert('Cumpararea licentei a fost efectuata cu succes');
-
-            console.log('Raspuns server:', result.data);
-        } catch (uploadError) {
-            console.error('Eroare la cumpararea licentei:', uploadError.response || uploadError);
-            alert('Eroare la cumpararea licentei');
-        } finally {
-            setOpenModal(false);
-            setIsLoading(false);
-        }
-    }
-
 
     const cardStyle = {
         border: '1px solid #e5e7eb',
@@ -168,18 +163,17 @@ const DisplayContent = () => {
                 </div>
             )}
 
-            {contentList.length === 0 && !isLoading && <p>No content available yet.</p>}
+            {licencesList.length === 0 && !isLoading && <p>No licences available yet.</p>}
            
-
-            {/* Buy licence modal dialog */}
+           {/* Revoke modal dialog */}
             <Dialog open={openModal} onClose={setOpenModal} className="relative z-10">
-                    <DialogBackdrop
-                        transition
-                        className="fixed inset-0 bg-gray-500/75 transition-opacity data-[closed]:opacity-0 data-[enter]:duration-300 data-[leave]:duration-200 data-[enter]:ease-out data-[leave]:ease-in"
-                    />
+                <DialogBackdrop
+                    transition
+                    className="fixed inset-0 bg-gray-500/75 transition-opacity data-[closed]:opacity-0 data-[enter]:duration-300 data-[leave]:duration-200 data-[enter]:ease-out data-[leave]:ease-in"
+                />
 
-                    <div className="fixed inset-0 z-10 w-screen overflow-y-auto">
-                        <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                <div className="fixed inset-0 z-10 w-screen overflow-y-auto">
+                    <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
                         <DialogPanel
                             transition
                             className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all data-[closed]:translate-y-4 data-[closed]:opacity-0 data-[enter]:duration-300 data-[leave]:duration-200 data-[enter]:ease-out data-[leave]:ease-in sm:my-8 sm:w-full sm:max-w-lg data-[closed]:sm:translate-y-0 data-[closed]:sm:scale-95"
@@ -191,28 +185,13 @@ const DisplayContent = () => {
                                 </div>
                                 <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
                                 <DialogTitle as="h3" className="text-base font-semibold text-gray-900">
-                                    Buy licence
+                                    Revoke licence
                                 </DialogTitle>
                                 <div className="mt-2">
-                                    <div className="sm:col-span-2">
-                                        <label htmlFor="title" className="block text-sm/6 font-medium text-gray-900">
-                                            Number of days the licence will be available
-                                        </label>
-                                        <div className="mt-2">
-                                            <div className="flex items-center rounded-md bg-white pl-3 outline outline-1 -outline-offset-1 outline-gray-300 has-[input:focus-within]:outline has-[input:focus-within]:outline-2 has-[input:focus-within]:-outline-offset-2 has-[input:focus-within]:outline-indigo-600">
-                                                <input
-                                                    id="duration"
-                                                    name="duration"
-                                                    type="number"
-                                                    min="1"
-                                                    value={duration}
-                                                    className="block min-w-0 grow py-1.5 pl-1 pr-3 text-base text-gray-900 placeholder:text-gray-400 focus:outline focus:outline-0 sm:text-sm/6"
-                                                    onChange={captureDuration}
-                                                    disabled={isLoading}
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <p className="text-sm text-gray-500">
+                                    Are you sure you want to revoke the licence?
+                                    This action cannot be undone.
+                                    </p>
                                 </div>
                                 </div>
                             </div>
@@ -220,10 +199,10 @@ const DisplayContent = () => {
                             <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
                             <button
                                 type="button"
-                                onClick={handleBuyLicence}
+                                onClick={handleRevokeClick}
                                 className="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto"
                             >
-                                Buy
+                                Revoke
                             </button>
                             <button
                                 type="button"
@@ -239,29 +218,33 @@ const DisplayContent = () => {
                     </div>
                 </Dialog>
 
-            {contentList.map((content) => (
-                <div key={content.CID} style={cardStyle}>
-                    <FilePreview fileUrl={content.fileUrl} />
+            {licencesList.map((licence) => (
+                <div key={licence.CID} style={cardStyle}>
+                    <FilePreview fileUrl={licence.fileUrl} />
                     <div style={{ marginTop: '1rem' }}>
-                    <p style={{ color: '#4b5563' }}>Title: {content.title}</p>
-                        <p style={{ color: '#4b5563', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>
-                            Creator: {content.creator}
-                        </p>
-                        <p style={{ color: '#4b5563' }}>Price: {ethers.formatEther(content.price)} ETH</p>
-                        <p style={{ color: '#4b5563' }}>Usage Count: {content.usageCount}</p>
-                        <p style={{ color: '#4b5563', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>CID: {content.CID}</p>
-                        <button
-                            type="button"
-                            className="mt-6 flex w-full items-center justify-center rounded-md border border-transparent bg-slate-100 px-8 py-3 text-base font-medium text-black hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-200 focus:ring-offset-2"
-                            onClick={() => {setSelectedContentCid(content.CID); setOpenModal(true)}}
-                        >
-                            Buy licence
-                        </button>
+                        <p style={{ color: '#4b5563' }}>Issue date: {licence.issueDate}</p>
+                        <p style={{ color: '#4b5563' }}>Expiry date: {licence.expiryDate}</p>
+                        <p style={{ color: '#4b5563', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>CID: {licence.CID}</p>
                     </div>
+                    {licence.isValid && <button
+                            type="button"
+                            className="mt-6 inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto text-center items-center"
+                            onClick={() => {setSelectedLicenceCid(licence.CID); setOpenModal(true)}}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-pen" viewBox="0 0 16 16">
+                            <path d="m13.498.795.149-.149a1.207 1.207 0 1 1 1.707 1.708l-.149.148a1.5 1.5 0 0 1-.059 2.059L4.854 14.854a.5.5 0 0 1-.233.131l-4 1a.5.5 0 0 1-.606-.606l1-4a.5.5 0 0 1 .131-.232l9.642-9.642a.5.5 0 0 0-.642.056L6.854 4.854a.5.5 0 1 1-.708-.708L9.44.854A1.5 1.5 0 0 1 11.5.796a1.5 1.5 0 0 1 1.998-.001m-.644.766a.5.5 0 0 0-.707 0L1.95 11.756l-.764 3.057 3.057-.764L14.44 3.854a.5.5 0 0 0 0-.708z"/>
+                            </svg>
+                            Revoke licence
+                        </button>}
+                    {!licence.isValid && <span 
+                        className="mt-6 inline-flex justify-center text-center items-center rounded-md bg-red-50 px-2 py-1 text-m font-medium text-red-700 ring-1 ring-inset ring-red-600/10"
+                        >
+                            Invalid licence
+                        </span>}    
                 </div>
             ))}
         </div>
     );
 };
 
-export default DisplayContent;
+export default MyLicences;
