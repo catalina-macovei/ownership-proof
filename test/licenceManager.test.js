@@ -174,6 +174,25 @@ describe('LicenceManager', function () {
       expect(licence.userId).to.equal(await user1.getAddress());
       expect(licence.CID).to.equal(addedCid);
     });
+  });
+
+  describe('Licences of User', function () {
+    it('should return correct licences details for specified user', async function () {
+      const { licenceManager, user1, user2, addedCid, addedPrice, duration, newCid} = await loadFixture(deployContractAndSetVariables);
+
+      // Setup: Pay and issue licences for 2 different users
+      await licenceManager.connect(user1).pay(addedCid, { value: addedPrice });
+      await licenceManager.issueLicence(await user1.getAddress(), addedCid, duration);
+
+      await licenceManager.connect(user2).pay(addedCid, { value: addedPrice});
+      await licenceManager.issueLicence(await user2.getAddress(), addedCid, duration + 1);
+
+      const licences = await licenceManager.getLicencesForUser(await user1.getAddress());
+      expect(licences.length).to.equal(1);
+      expect(licences[0].CID).to.equal(addedCid);
+      expect(licences[0].userId).to.equal(await user1.getAddress());
+      expect(licences[0].isValid).to.be.true;
+    });
 
     it('should return empty licence details for non-existent licence', async function () {
       const { licenceManager, user1, newCid } = await loadFixture(deployContractAndSetVariables);

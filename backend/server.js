@@ -237,6 +237,24 @@ application.post('/api/v1/buy-licence', upload.none(), async (req, res) => {
     }
 });
 
+// get all files for a creator endpoint
+application.get('/api/v1/my-licences', async (req, res) => {
+    try {
+        const allContents = await contractContent.getAllContentDetails();
+        const formattedContent = allContents.filter(c => c[0] == signer.address && c[5] == true).map(content => ({
+            creator: content[0],
+            price: content[1].toString(),
+            usageCount: content[2].toString(),
+            CID: content[3],
+            fileUrl: `https://${content[3]}.ipfs.w3s.link`,
+            title: content[4]
+        }));
+        res.json(formattedContent);
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({ message: 'Error fetching licences' });
+    }
+});
 
 // Start the server
 application.listen(port, () => {

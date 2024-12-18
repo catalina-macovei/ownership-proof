@@ -53,6 +53,11 @@ contract ContentManager is Ownable {
         (bool success, ) = payable(admin).call{value: msg.value}("");
         require(success, "Failed to transfer platform fee");
 
+        // Add content CID in the list only if it isn't already there
+        if (contents[CID].creator == address(0)) {
+            contentCIDs.push(CID); // Store CID in the list
+        }
+        
         // Add content to mapping and list
         contents[CID] = Content({
             creator: msg.sender,
@@ -62,7 +67,6 @@ contract ContentManager is Ownable {
             title: title,
             isAvailable: true
         });
-        contentCIDs.push(CID); // Store CID in the list
 
         emit ContentAdded(msg.sender, CID);
     }

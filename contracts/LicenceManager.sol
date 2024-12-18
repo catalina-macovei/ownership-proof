@@ -20,6 +20,7 @@ contract LicenceManager {
 
     mapping(address => mapping(string => Licence)) public licences;
     mapping(string => uint256) public licencePayments;
+    mapping(address => string[]) private ownedLicencesCids;
 
     event LicenceIssued(address user, string CID, uint256 expiryDate);
     event LicenceRevoked(address user, string CID);
@@ -43,6 +44,10 @@ contract LicenceManager {
 
         uint256 issueDate = block.timestamp;
         uint256 expiryDate = issueDate + duration;
+
+        if (licences[user][CID].userId == address(0)) {
+            ownedLicencesCids[user].push(CID);
+        }
 
         licences[user][CID] = Licence({
             issueDate: issueDate,
@@ -95,5 +100,15 @@ contract LicenceManager {
     // returneaza detaliile licentei
     function getLicenceDetails(address user, string memory CID) external view returns (Licence memory) {
         return licences[user][CID];
+    }
+
+    // returneaza licentele pentru un utilizator
+    function getLicencesForUser(address user) external view returns (Licence[] memory) {
+        uint size = ownedLicencesCids[user].length;
+        Licence[] memory ownedLicences = new Licence[](size);
+        for (uint i = 0; i < size; i++) {
+            ownedLicences[i] = licences[user][ownedLicencesCids[user][i]];
+        }
+        return ownedLicences;
     }
 }
