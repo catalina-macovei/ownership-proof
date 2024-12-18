@@ -17,8 +17,9 @@ contract ContentManager is Ownable {
     }
 
     event ContentAdded(address creator, string CID);
-    event ContentRemoved(address creator, string CID);
+    event ContentIsAvailableChanged(address creator, string CID);
     event ContentPriceChanged(string CID, uint oldPrice, uint newPrice);
+    event ContentTitleChanged(string CID, string oldTitle, string newTitle);
     event ContentUsageCountChanged(string CID, uint oldUsageCount, uint newUsageCount);
     event PlatformFeeChanged(uint oldFee, uint newFee);
 
@@ -27,6 +28,8 @@ contract ContentManager is Ownable {
         uint price;
         uint usageCount;
         string CID;
+        string title;
+        bool isAvailable;
     }
 
     mapping(string => Content) private contents;
@@ -40,8 +43,10 @@ contract ContentManager is Ownable {
         admin = initialOwner;
     }
 
-    function addContent(uint price, string memory CID) public payable {
-        require(contents[CID].creator == address(0), "Content is already on the platform!");
+    function addContent(uint price, string memory CID, string memory title) public payable {
+        
+        require (contents[CID].creator == address(0) && contents[CID].isAvailable == false, "Content is already on the platform!");
+
         require(msg.value == platformFee, "You must pay the platform fee to upload content");
 
         // Transfer platform fee to admin
@@ -53,32 +58,26 @@ contract ContentManager is Ownable {
             creator: msg.sender,
             price: price,
             usageCount: 0,
-            CID: CID
+            CID: CID,
+            title: title,
+            isAvailable: true
         });
         contentCIDs.push(CID); // Store CID in the list
 
         emit ContentAdded(msg.sender, CID);
     }
 
-    function removeContent(string memory CID) public OnlyExistentContent(CID) OnlyCreator(contents[CID].creator) {
-        // Remove content from mapping
-        delete contents[CID];
+    function setUnavailableContent(string memory CID) public OnlyExistentContent(CID) OnlyCreator(contents[CID].creator) {
+        contents[CID].isAvailable = false;
 
-        // Remove CID from the list
-        for (uint i = 0; i < contentCIDs.length; i++) {
-            if (keccak256(abi.encodePacked(contentCIDs[i])) == keccak256(abi.encodePacked(CID))) {
-                contentCIDs[i] = contentCIDs[contentCIDs.length - 1];
-                contentCIDs.pop();
-                break;
-            }
-        }
-
-        emit ContentRemoved(msg.sender, CID);
+        emit ContentIsAvailableChanged(msg.sender, CID);
     }
 
-    function getContent(string memory CID) public view OnlyExistentContent(CID) returns (address creator, uint price, uint usageCount) {
+    function getContent(string memory CID) public view OnlyExistentContent(CID) returns (address creator, uint price, uint usageCount, string memory title, bool isAvailable) {
+
         Content memory content = contents[CID];
-        return (content.creator, content.price, content.usageCount);
+
+        return (content.creator, content.price, content.usageCount, content.title, content.isAvailable);
     }
 
     function getAllContentCIDs() public view returns (string[] memory) {
@@ -97,6 +96,15 @@ contract ContentManager is Ownable {
         uint oldPrice = contents[CID].price;
         contents[CID].price = newPrice;
         emit ContentPriceChanged(CID, oldPrice, newPrice);
+    }
+
+    function setTitle(string memory CID, string memory newTitle) external OnlyExistentContent(CID) OnlyCreator(contents[CID].creator) {
+
+        string memory oldTitle = contents[CID].title;
+
+        contents[CID].title = newTitle;
+
+        emit ContentTitleChanged(CID, oldTitle, newTitle);
     }
 
     function increaseUsageCount(string memory CID) external OnlyExistentContent(CID) {

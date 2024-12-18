@@ -8,7 +8,7 @@ import { ethers } from 'ethers';
 import { createRequire } from 'module';
 
 const require = createRequire(import.meta.url);
-const LicenseManager = require('../artifacts/contracts/ContentManager.sol/ContentManager.json');
+const ContentManager = require('../artifacts/contracts/ContentManager.sol/ContentManager.json');
 dotenv.config();
 
 console.log('Environment variables loaded:', {
@@ -17,7 +17,7 @@ console.log('Environment variables loaded:', {
     hasContractAddress: !!process.env.CONTENT_MANAGER
 });
 
-console.log('Contract ABI:', LicenseManager.abi ? 'Loaded' : 'Not loaded');
+console.log('Contract ABI:', ContentManager.abi ? 'Loaded' : 'Not loaded');
 console.log('Contract Address:', process.env.CONTENT_MANAGER);
 
 const provider = new ethers.JsonRpcProvider(process.env.SEPOLIA_RPC_URL);
@@ -29,7 +29,7 @@ const privateKey = process.env.PRIVATE_KEY.startsWith('0x')
 const signer = new ethers.Wallet(privateKey, provider);
 const contract = new ethers.Contract(
     process.env.CONTENT_MANAGER,
-    LicenseManager.abi,
+    ContentManager.abi,
     signer
 );
 
@@ -44,6 +44,7 @@ await w2client.init();
 
 // cors este un middleware
 application.use(cors());
+application.use(express.json());
 
 // multer este pentru file uploads
 const blobStorage = multer.memoryStorage(); // Store file in memory as buffer
@@ -52,7 +53,7 @@ const upload = multer({ blobStorage });
 
 const fetchContentData = async () => {
     const allContents = await contract.getAllContentDetails();
-    console.log(allContents);
+    // console.log(allContents);
 };
 // apelam functia
 fetchContentData();
@@ -85,7 +86,12 @@ application.post('/api/v1/authorship-proof', upload.single('file'), async (req, 
     
         const cidString = cid.toString(); 
 
-        const tx = await contract.addContent(price, cidString, { value: platformFee });
+        const price = req.body.price;
+        const title = req.body.title;
+        const priceFormatted = ethers.parseEther(price);
+
+        const platformFee = await contract.getPlatformFee();
+        const tx = await contract.addContent(priceFormatted, cidString, title, { value: platformFee });
         const receipt = await tx.wait();
         console.log('Transaction hash:', receipt.hash);
 
@@ -105,17 +111,92 @@ application.post('/api/v1/authorship-proof', upload.single('file'), async (req, 
 application.get('/api/v1/content', async (req, res) => {
     try {
         const allContents = await contract.getAllContentDetails();
-        const formattedContent = allContents.map(content => ({
+        const formattedContent = allContents.filter(content => content[5] == true).map(content => ({
             creator: content[0],
             price: content[1].toString(),
             usageCount: content[2].toString(),
             CID: content[3],
-            fileUrl: `https://${content[3]}.ipfs.w3s.link`
+            fileUrl: `https://${content[3]}.ipfs.w3s.link`,
+            title: content[4]
         }));
         res.json(formattedContent);
     } catch (error) {
         console.error('Error:', error);
         res.status(500).json({ message: 'Error fetching content' });
+    }
+});
+
+// get all files for a creator endpoint
+application.get('/api/v1/my-content', async (req, res) => {
+    try {
+        const allContents = await contract.getAllContentDetails();
+        const formattedContent = allContents.filter(c => c[0] == signer.address && c[5] == true).map(content => ({
+            creator: content[0],
+            price: content[1].toString(),
+            usageCount: content[2].toString(),
+            CID: content[3],
+            fileUrl: `https://${content[3]}.ipfs.w3s.link`,
+            title: content[4]
+        }));
+        res.json(formattedContent);
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({ message: 'Error fetching content' });
+    }
+});
+
+
+// Endpoint pentru disable content 
+application.post('/api/v1/disable-content', async (req, res) => {
+    try {
+        const { cid } = req.body;
+        const tx = await contract.setUnavailableContent(cid);
+        const receipt = await tx.wait();
+        console.log('Transaction hash:', receipt.hash);
+        res.status(200).json({
+            message: 'Succes!!!'
+        });
+
+    } catch (error) {
+        console.error('Eroare in timpul setarii continutului ca indisponibil', error);
+        res.status(500).json({ message: 'Eroare in timpul setarii continutului ca indisponibil' });
+    }
+});
+
+// Endpoint pentru disable content 
+application.post('/api/v1/set-title', upload.none(), async (req, res) => {
+    try {
+        const cid = req.body.cid;
+        const title = req.body.title;
+        const tx = await contract.setTitle(cid, title);
+        const receipt = await tx.wait();
+        console.log('Transaction hash:', receipt.hash);
+        res.status(200).json({
+            message: 'Succes!!!'
+        });
+
+    } catch (error) {
+        console.error('Eroare in timpul setarii titlului', error);
+        res.status(500).json({ message: 'Eroare in timpul setarii titlului' });
+    }
+});
+
+// Endpoint pentru disable content 
+application.post('/api/v1/set-price', upload.none(), async (req, res) => {
+    try {
+        const cid = req.body.cid;
+        const price = req.body.price;
+        const priceFormatted = ethers.parseEther(price);
+        const tx = await contract.setPrice(cid, priceFormatted);
+        const receipt = await tx.wait();
+        console.log('Transaction hash:', receipt.hash);
+        res.status(200).json({
+            message: 'Succes!!!'
+        });
+
+    } catch (error) {
+        console.error('Eroare in timpul setarii continutului ca indisponibil', error);
+        res.status(500).json({ message: 'Eroare in timpul setarii continutului ca indisponibil' });
     }
 });
 

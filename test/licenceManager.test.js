@@ -14,8 +14,9 @@ describe('LicenceManager', function () {
     const newCid = 'bafkreibkfkqs5iax34mccrllg352slzz7x4nwkftpxe5yt5qd236gsxz4i';
     const addedCid = 'cafkreibkfkqs5iax34mccrllg352slzz7x4nwkftpxe5yt5qd236gsxz4i';
     const addedPrice = 10;
+    const addedTitle = 'title';
 
-    await contentManager.addContent(addedPrice, addedCid, { value: platformFee });
+    await contentManager.addContent(addedPrice, addedCid, addedTitle, { value: platformFee });
     const contentManagerAddress = await contentManager.getAddress();
 
     const LicenceManager = await ethers.getContractFactory('LicenceManager');
