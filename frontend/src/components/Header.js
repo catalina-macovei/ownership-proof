@@ -8,6 +8,7 @@ const navigation = [
   { name: 'Browse content', path: Path.ALL_CONTENT, title: 'Browse content' },
   { name: 'My content', path: Path.MY_CONTENT, title: 'My content' },
   { name: 'My licences', path: Path.MY_LICENCES, title: 'My licences' },
+  { name: 'Platform fee', path: Path.PLATFORM_FEE, title: 'Platform fee' }
 ];
 
 function classNames(...classes) {

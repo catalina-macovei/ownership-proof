@@ -7,6 +7,7 @@ import DisplayContent from "../components/DisplayContent"
 import MyContent from "../components/MyContent"
 import ConnectMetamask from "../components/ConnectMetamask"
 import MyLicences from "../components/MyLicences"
+import PlatformFee from "../components/PlatformFee"
 
 const routes = [
   {
@@ -36,6 +37,10 @@ const routes = [
       {
         path: "my-licences",
         element: <MyLicences />
+      },
+      {
+        path: "set-fee",
+        element: <PlatformFee />
       },
     ],
   },
