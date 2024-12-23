@@ -6,14 +6,6 @@ import { ExclamationTriangleIcon } from '@heroicons/react/24/outline'
 
 const FilePreview = ({ fileUrl }) => {
     const [fileType, setFileType] = useState(null);
-    
-    const previewStyle = {
-        width: '250px',
-        height: '200px',
-        objectFit: 'cover',
-        borderRadius: '8px',
-        margin: '0 auto'
-    };
 
     useEffect(() => {
         const fetchFileType = async () => {
@@ -21,63 +13,32 @@ const FilePreview = ({ fileUrl }) => {
                 const response = await fetch(fileUrl, { method: 'HEAD' });
                 const contentType = response.headers.get('Content-Type');
                 setFileType(contentType ? contentType.toLowerCase() : 'unknown');
-            } catch (error) {
-                console.error('Error fetching file type:', error);
+            } catch {
                 setFileType('unknown');
             }
         };
 
-        if (!fileUrl.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp|mp4|webm|mp3|wav|pdf)$/)) {
+        if (!fileUrl.match(/\.(jpg|jpeg|png|gif|webp|mp4|webm|mp3|wav|pdf)$/i)) {
             fetchFileType();
         } else {
-            const extension = fileUrl.toLowerCase().split('.').pop();
             const extToMime = {
-                jpg: 'image/jpeg',
-                jpeg: 'image/jpeg',
-                png: 'image/png',
-                gif: 'image/gif',
-                webp: 'image/webp',
-                mp4: 'video/mp4',
-                webm: 'video/webm',
-                mp3: 'audio/mpeg',
-                wav: 'audio/wav',
+                jpg: 'image/jpeg', jpeg: 'image/jpeg',
+                png: 'image/png', gif: 'image/gif', webp: 'image/webp',
+                mp4: 'video/mp4', webm: 'video/webm',
+                mp3: 'audio/mpeg', wav: 'audio/wav',
                 pdf: 'application/pdf'
             };
+            const extension = fileUrl.split('.').pop().toLowerCase();
             setFileType(extToMime[extension] || 'unknown');
         }
     }, [fileUrl]);
 
-    if (!fileType) {
-        return <div>Loading preview...</div>;
-    }
-
-    if (fileType === 'pdf') {
-        return (
-            <iframe
-                src={fileUrl}
-                title="PDF preview"
-                style={{ ...previewStyle, height: '400px' }}
-            />
-        );
-    }
-
-    if (fileType.includes('image')) {
-        return <img src={fileUrl} alt="Content preview" style={previewStyle} />;
-    }
-
-    if (fileType.includes('video')) {
-        return <video src={fileUrl} controls style={previewStyle} />;
-    }
-
-    if (fileType.includes('audio')) {
-        return <audio src={fileUrl} controls style={{ width: '250px', margin: '0 auto' }} />;
-    }
-
-    return (
-        <div style={{ ...previewStyle, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f3f4f6', color: '#6b7280' }}>
-            <span>Preview not available</span>
-        </div>
-    );
+    if (!fileType) return <div>Loading preview...</div>;
+    if (fileType.includes('image')) return <img src={fileUrl} alt="Preview" />;
+    if (fileType.includes('video')) return <video src={fileUrl} controls />;
+    if (fileType.includes('audio')) return <audio src={fileUrl} controls />;
+    if (fileType === 'application/pdf') return <iframe src={fileUrl} title="PDF Preview" />;
+    return <div>Preview not available</div>;
 };
 
 const DisplayContent = () => {
@@ -91,15 +52,64 @@ const DisplayContent = () => {
         const fetchContent = async () => {
             try {
                 setIsLoading(true);
-                const response = await fetch('http://localhost:8000/api/v1/content');
+                const storedToken = sessionStorage.getItem('authToken');
+                
+                const response = await fetch('http://localhost:8000/api/v1/content', {
+                    headers: {
+                        'Authorization': `Bearer ${storedToken}`
+                    }
+                });
                 const data = await response.json();
                 setContentList(data);
-                setIsLoading(false);
             } catch (error) {
                 console.error('Error fetching content:', error);
+            } finally {
                 setIsLoading(false);
             }
         };
+        
+        const handleBuyLicence = async (event) => {
+            event.preventDefault();
+            const storedToken = sessionStorage.getItem('authToken');
+        
+            if (!storedToken) {
+                alert('Please connect with MetaMask first');
+                return;
+            }
+        
+            if (!duration || duration < 1) {
+                alert('Duration must be at least one day');
+                return;
+            }
+        
+            try {
+                setIsLoading(true);
+                const uploadData = new FormData();
+                uploadData.append('cid', selectedContentCid);
+                uploadData.append('duration', duration);
+        
+                const response = await fetch('http://localhost:8000/api/v1/buy-licence', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${storedToken}`
+                    },
+                    body: uploadData
+                });
+        
+                if (response.ok) {
+                    alert('License purchased successfully');
+                } else {
+                    throw new Error('License purchase failed');
+                }
+            } catch (error) {
+                console.error('Error purchasing license:', error);
+                alert('Error purchasing license');
+            } finally {
+                setOpenModal(false);
+                setIsLoading(false);
+            }
+        };
+        
 
         fetchContent();
     }, []);
@@ -111,35 +121,40 @@ const DisplayContent = () => {
         setDuration(selectedDuration);
     };
 
-    const handleBuyLicence = async (event) => {
-        event.preventDefault();
-
-        if (!duration) {
-            alert('Te rugam sa introduci o durata inainte de trimitere');
+ // Handle buy licence
+ const handleBuyLicence = async (event) => {
+    event.preventDefault();
+    if (!duration || duration < 1) {
+        alert('Duration must be at least one day.');
+        return;
+    }
+    try {
+        setIsLoading(true);
+        const storedToken = sessionStorage.getItem('authToken');
+        if (!storedToken) {
+            alert('Please connect with MetaMask first.');
             return;
         }
+        const uploadData = new FormData();
+        uploadData.append('cid', selectedContentCid);
+        uploadData.append('duration', duration);
 
-        if (duration < 1) {
-            alert('Durata trebuie sa fie de cel putin o zi');
-            return;
+        const response = await axios.post('http://localhost:8000/api/v1/buy-licence', uploadData, {
+            headers: { Authorization: `Bearer ${storedToken}` },
+        });
+        
+        if (response.status === 200) {
+            alert('License purchased successfully');
+        } else {
+            throw new Error('License purchase failed');
         }
-
-        try {
-            setIsLoading(true);
-            const uploadData = new FormData();
-            uploadData.append('cid', selectedContentCid);
-            uploadData.append('duration', duration);
-            const result = await axios.post('http://localhost:8000/api/v1/buy-licence', uploadData);
-            alert('Cumpararea licentei a fost efectuata cu succes');
-
-            console.log('Raspuns server:', result.data);
-        } catch (uploadError) {
-            console.error('Eroare la cumpararea licentei:', uploadError.response || uploadError);
-            alert('Eroare la cumpararea licentei');
-        } finally {
-            setOpenModal(false);
-            setIsLoading(false);
-        }
+    } catch (error) {
+        console.error('Error purchasing license:', error);
+        alert('Error purchasing license');
+    } finally {
+        setOpenModal(false);
+        setIsLoading(false);
+    }
     }
 
 

@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { ethers } from 'ethers';
-import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react'
-import { ExclamationTriangleIcon } from '@heroicons/react/24/outline'
 import axios from 'axios';
+import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react';
+import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { AuthContext } from './ConnectMetamask';
 
 const FilePreview = ({ fileUrl }) => {
     const [fileType, setFileType] = useState(null);
-    
+    const { token } = useContext(AuthContext);
+
     const previewStyle = {
         width: '250px',
         height: '200px',
@@ -16,9 +18,19 @@ const FilePreview = ({ fileUrl }) => {
     };
 
     useEffect(() => {
+        if (!fileUrl) {
+            setFileType('unknown');
+            return;
+        }
+
         const fetchFileType = async () => {
             try {
-                const response = await fetch(fileUrl, { method: 'HEAD' });
+                const response = await fetch(fileUrl, { 
+                    method: 'HEAD',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
                 const contentType = response.headers.get('Content-Type');
                 setFileType(contentType ? contentType.toLowerCase() : 'unknown');
             } catch (error) {
@@ -45,7 +57,7 @@ const FilePreview = ({ fileUrl }) => {
             };
             setFileType(extToMime[extension] || 'unknown');
         }
-    }, [fileUrl]);
+    }, [fileUrl, token]);
 
     if (!fileType) {
         return <div>Loading preview...</div>;
@@ -82,31 +94,42 @@ const FilePreview = ({ fileUrl }) => {
 
 
 const MyLicences = () => {
+    const { token } = useContext(AuthContext);
     const [licencesList, setLicencesList] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [openModal, setOpenModal] = useState(false);
     const [selectedLicenceCid, setSelectedLicenceCid] = useState(null);
+
     let licenceContent = {};
 
-    const handleRevokeClick = async (event) => {
+    const handleRevokeClick = async () => {
         setIsLoading(true);
         try {
-            const result = await axios.post('http://localhost:8000/api/v1/revoke-licence', {
-                cid: selectedLicenceCid,
-              });
-              setIsLoading(false);
-              setOpenModal(false);
-              alert('Licenta revocata');
-        } catch (uploadError) {
+            // Make the API call with axios
+            const response = await axios.post(
+                'http://localhost:8000/api/v1/revoke-licence', // URL
+                { cid: selectedLicenceCid }, // Data payload
+                { // Headers
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                }
+            );
             setIsLoading(false);
             setOpenModal(false);
-            console.error('Eroare la revocarea licentei:', uploadError.response || uploadError);
-            alert('Eroare la revocarea licentei');
+            alert('Licence revoked successfully');
+        } catch (error) {
+            setIsLoading(false);
+            setOpenModal(false);
+            console.error('Error revoking licence:', error.response || error);
+            alert('Error revoking licence');
         } finally {
             setIsLoading(false);
             setOpenModal(false);
         }
     };
+    
     
     useEffect(() => {
         const fetchLicences = async () => {
@@ -114,11 +137,21 @@ const MyLicences = () => {
                 setIsLoading(true);
 
                 // get content for file preview
-                const responseContent = await fetch('http://localhost:8000/api/v1/content');
+
+                const responseContent = await fetch('http://localhost:8000/api/v1/content', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
                 const dataContent = await responseContent.json();
 
                 // get licences for user
-                const responseLicences = await fetch('http://localhost:8000/api/v1/my-licences');
+              const responseLicences = await fetch('http://localhost:8000/api/v1/my-licences', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+                });
                 const dataLicence = await responseLicences.json();
 
                 // pair licences with content images
@@ -135,8 +168,10 @@ const MyLicences = () => {
             }
         };
 
-        fetchLicences();
-    }, []);
+        if (token) {
+            fetchLicences();
+        }
+    }, [token]);
 
     const cardStyle = {
         border: '1px solid #e5e7eb',

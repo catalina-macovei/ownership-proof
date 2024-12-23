@@ -22,22 +22,22 @@ contract LicenceManager {
     mapping(string => uint256) public licencePayments;
     mapping(address => string[]) private ownedLicencesCids;
 
-    event LicenceIssued(address user, string CID, uint256 expiryDate);
-    event LicenceRevoked(address user, string CID);
-    event PaymentReceived(address user, string CID, uint256 amount);
+    event LicenceIssued(address indexed user, string indexed CID, uint256 expiryDate);
+    event LicenceRevoked(address indexed user, string indexed CID);
+    event PaymentReceived(address indexed user, string indexed CID, uint256 amount);
 
     constructor(address contentManagerAddress) {
         contentManager = ContentManager(contentManagerAddress);
     }
 
-    // verifica daca contentul exista dupa cid
+    // Modifier to validate content existence
     modifier onlyValidContent(string memory CID) {
-        (address creator,,,,) = contentManager.getContent(CID);
+        (address creator, , , ,) = contentManager.getContent(CID);
         require(creator != address(0), "Content does not exist");
         _;
     }
 
-    // verifica daca licenta exista deja, e platita -> se creeaza 
+    // Issue a new license
     function issueLicence(address user, string memory CID, uint256 duration) external onlyValidContent(CID) {
         require(licencePayments[CID] > 0, "Licence not paid for");
         require(!licences[user][CID].isValid, "Licence already exists");
@@ -63,12 +63,11 @@ contract LicenceManager {
         emit LicenceIssued(user, CID, expiryDate);
     }
 
-    // plata pentru licenta
+    // Pay for a license
     function pay(string memory CID) external payable onlyValidContent(CID) {
-        (, uint256 price,,, ) = contentManager.getContent(CID);
+        (, uint256 price, , ,) = contentManager.getContent(CID);
         require(msg.value >= price, "Insufficient payment");
 
-        // verifica daca userul deja are o licenta activa
         Licence memory existingLicence = licences[msg.sender][CID];
         require(!existingLicence.isValid, "License already active");
 
@@ -81,28 +80,28 @@ contract LicenceManager {
         emit PaymentReceived(msg.sender, CID, msg.value);
     }
 
-    // daca exista, atunci se revoca
+    // Revoke an existing license
     function revokeLicence(string memory CID) external {
         require(licences[msg.sender][CID].isValid, "Licence does not exist or already revoked");
         require(licences[msg.sender][CID].userId == msg.sender, "Only licence holder can revoke");
-        
+
         licences[msg.sender][CID].isValid = false;
-        
+
         emit LicenceRevoked(msg.sender, CID);
     }
 
-    // verifica daca licenta este valida
+    // Verify if a license is valid
     function verifyLicence(address user, string memory CID) external view returns (bool) {
         Licence memory licence = licences[user][CID];
         return licence.isValid;
     }
 
-    // returneaza detaliile licentei
+    // Get details of a specific license
     function getLicenceDetails(address user, string memory CID) external view returns (Licence memory) {
         return licences[user][CID];
     }
 
-    // returneaza licentele pentru un utilizator
+    // Get all licenses owned by a user
     function getLicencesForUser(address user) external view returns (Licence[] memory) {
         uint size = ownedLicencesCids[user].length;
         Licence[] memory ownedLicences = new Licence[](size);
