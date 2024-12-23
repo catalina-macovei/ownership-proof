@@ -1,7 +1,7 @@
 import multer from 'multer';
 import express from 'express';
 import { Blob } from 'buffer';
-import cors from 'cors'; 
+import cors from 'cors';
 import dotenv from 'dotenv';
 import W3client from './W3ServiceClient.js';
 import { ethers } from 'ethers';
@@ -12,115 +12,99 @@ const ContentManager = require('../artifacts/contracts/ContentManager.sol/Conten
 const LicenceManager = require('../artifacts/contracts/LicenceManager.sol/LicenceManager.json');
 dotenv.config();
 
-console.log('Environment variables loaded:', {
-    hasRpcUrl: !!process.env.SEPOLIA_RPC_URL,
-    hasPrivateKey: !!process.env.PRIVATE_KEY,
-    hasContentManagerContractAddress: !!process.env.CONTENT_MANAGER,
-    hasLicenceManagerContractAddress: !!process.env.LICENCE_MANAGER
-});
-
-console.log('Contract ABI for ContentManager:', ContentManager.abi ? 'Loaded' : 'Not loaded');
-console.log('ContentManager Contract Address:', process.env.CONTENT_MANAGER);
-
-console.log('Contract ABI for LicenceManager:', LicenceManager.abi ? 'Loaded' : 'Not loaded');
-console.log('LicenceManager Contract Address:', process.env.LICENCE_MANAGER);
-
 const provider = new ethers.JsonRpcProvider(process.env.SEPOLIA_RPC_URL);
-const privateKey = process.env.PRIVATE_KEY.startsWith('0x') 
-    ? process.env.PRIVATE_KEY 
-    : `0x${process.env.PRIVATE_KEY}`;
 
-// initializare contract, load from abi
-const signer = new ethers.Wallet(privateKey, provider);
-const contractContent = new ethers.Contract(
-    process.env.CONTENT_MANAGER,
-    ContentManager.abi,
-    signer
-);
-const contractLicence = new ethers.Contract(
-    process.env.LICENCE_MANAGER,
-    LicenceManager.abi,
-    signer
-);
+const getSigner = (account) => {
+    // Instead of using provider.getSigner(), create a new wallet instance
+    const provider = new ethers.JsonRpcProvider(process.env.SEPOLIA_RPC_URL);
+    const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+    return wallet;
+};
 
-// initializare express application
+const getContracts = (signer) => {
+    return {
+        contentContract: new ethers.Contract(
+            process.env.CONTENT_MANAGER,
+            ContentManager.abi,
+            signer
+        ),
+        licenceContract: new ethers.Contract(
+            process.env.LICENCE_MANAGER,
+            LicenceManager.abi,
+            signer
+        )
+    };
+};
+
 const application = express();
 const port = 8000;
-dotenv.config();
 
-// initializare W3client si Web3.Storage client cu instanta Singleton
-const w2client = new W3client();  
+const w2client = new W3client();
 await w2client.init();
 
-// cors este un middleware
 application.use(cors());
 application.use(express.json());
 
-// multer este pentru file uploads
-const blobStorage = multer.memoryStorage(); // Store file in memory as buffer
+const blobStorage = multer.memoryStorage();
 const upload = multer({ blobStorage });
 
-
-const fetchContentData = async () => {
-    const allContents = await contractContent.getAllContentDetails();
-    // console.log(allContents);
+const authMiddleware = async (req, res, next) => {
+    const authToken = req.headers.authorization?.split(' ')[1];
+    if (!authToken || !global.authenticatedAccount) {
+        return res.status(401).json({ message: 'Not authenticated' });
+    }
+    const signer = getSigner(global.authenticatedAccount);
+    const contracts = getContracts(signer);
+    req.signer = signer;
+    req.contracts = contracts;
+    next();
 };
-// apelam functia
-fetchContentData();
-
-// definim temporar niste variabile price, platform fee
-const price = 0;
-const platformFee = 0;
-
-// incerc sa setez platform fee
-//const setPlatformFeeTx = await contract.setPlatformFee(0);
-//await setPlatformFeeTx.wait();
-
-// sa vedem daca a fost setat corect
-//const currentFee = await contract.getPlatformFee();
-//console.log("Current platform fee:", currentFee.toString());
 
 
-// Endpoint pentru upload 
-application.post('/api/v1/authorship-proof', upload.single('file'), async (req, res) => {
+
+application.post('/api/auth', async (req, res) => {
+    try {
+        const { account, signature, message } = req.body;
+        const recoveredAddress = ethers.verifyMessage(message, signature);
+        if (recoveredAddress.toLowerCase() === account.toLowerCase()) {
+            const token = Buffer.from(`${account}-${Date.now()}`).toString('base64');
+            global.authenticatedAccount = account;
+            res.json({ token });
+        } else {
+            res.status(401).json({ message: 'Invalid signature' });
+        }
+    } catch (error) {
+        console.error('Auth error:', error);
+        res.status(500).json({ message: 'Authentication failed' });
+    }
+});
+
+application.post('/api/v1/authorship-proof', authMiddleware, upload.single('file'), async (req, res) => {
     if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
     }
     try {
-        // convertire buff in Blob
         const fileBlob = new Blob([req.file.buffer], { type: req.file.mimetype });
-
-        const uploadOptions = {}; 
-
-        const cid = await w2client.client.uploadFile(fileBlob, uploadOptions);
-    
-        const cidString = cid.toString(); 
-
+        const cid = await w2client.client.uploadFile(fileBlob, {});
+        const cidString = cid.toString();
+        
         const price = req.body.price;
         const title = req.body.title;
         const priceFormatted = ethers.parseEther(price);
-
-        const platformFee = await contractContent.getPlatformFee();
-        const tx = await contractContent.addContent(priceFormatted, cidString, title, { value: platformFee });
-        const receipt = await tx.wait();
-        console.log('Transaction hash:', receipt.hash);
-
-        // afis CID -> pentru checkup
-        console.log('Fisier incarcat cu succes-> CID:', cid);
-        res.status(200).json({
-            message: 'Succes!!!',
-            cid: cid
-        });
+        
+        const platformFee = await req.contracts.contentContract.getPlatformFee();
+        const tx = await req.contracts.contentContract.addContent(priceFormatted, cidString, title, { value: platformFee });
+        
+        res.status(200).json({ message: 'Success!', cid: cid });
     } catch (error) {
-        console.error('Eroare in timpul incarcarii:', error);
-        res.status(500).json({ message: 'Eroare in timpul incarcarii in Web3.Storage' });
+        console.error('Upload error:', error);
+        res.status(500).json({ message: 'Upload error' });
     }
 });
 
-// get all files endpoint
-application.get('/api/v1/content', async (req, res) => {
+application.get('/api/v1/content', authMiddleware, async (req, res) => {
     try {
-        const allContents = await contractContent.getAllContentDetails();
+        const allContents = await req.contracts.contentContract.getAllContentDetails();
         const formattedContent = allContents.filter(content => content[5] == true).map(content => ({
             creator: content[0],
             price: content[1].toString(),
@@ -136,18 +120,19 @@ application.get('/api/v1/content', async (req, res) => {
     }
 });
 
-// get all files for a creator endpoint
-application.get('/api/v1/my-content', async (req, res) => {
+application.get('/api/v1/my-content', authMiddleware, async (req, res) => {
     try {
-        const allContents = await contractContent.getAllContentDetails();
-        const formattedContent = allContents.filter(c => c[0] == signer.address && c[5] == true).map(content => ({
-            creator: content[0],
-            price: content[1].toString(),
-            usageCount: content[2].toString(),
-            CID: content[3],
-            fileUrl: `https://${content[3]}.ipfs.w3s.link`,
-            title: content[4]
-        }));
+        const allContents = await req.contracts.contentContract.getAllContentDetails();
+        const formattedContent = allContents
+            .filter(c => c[0].toLowerCase() === global.authenticatedAccount.toLowerCase() && c[5] == true)
+            .map(content => ({
+                creator: content[0],
+                price: content[1].toString(),
+                usageCount: content[2].toString(),
+                CID: content[3],
+                fileUrl: `https://${content[3]}.ipfs.w3s.link`,
+                title: content[4]
+            }));
         res.json(formattedContent);
     } catch (error) {
         console.error('Error:', error);
@@ -155,103 +140,86 @@ application.get('/api/v1/my-content', async (req, res) => {
     }
 });
 
-
-// Endpoint pentru disable content 
-application.post('/api/v1/disable-content', async (req, res) => {
+application.post('/api/v1/disable-content', authMiddleware, async (req, res) => {
     try {
         const { cid } = req.body;
-        const tx = await contractContent.setUnavailableContent(cid);
-        const receipt = await tx.wait();
-        console.log('Transaction hash:', receipt.hash);
-        res.status(200).json({
-            message: 'Succes!!!'
-        });
-
+        const tx = await req.contracts.contentContract.setUnavailableContent(cid);
+        res.status(200).json({ message: 'Success!' });
     } catch (error) {
-        console.error('Eroare in timpul setarii continutului ca indisponibil', error);
-        res.status(500).json({ message: 'Eroare in timpul setarii continutului ca indisponibil' });
+        console.error('Error disabling content:', error);
+        res.status(500).json({ message: 'Error disabling content' });
     }
 });
 
-// Endpoint pentru setarea titlului
-application.post('/api/v1/set-title', upload.none(), async (req, res) => {
+application.post('/api/v1/set-title', authMiddleware, upload.none(), async (req, res) => {
     try {
-        const cid = req.body.cid;
-        const title = req.body.title;
-        const tx = await contractContent.setTitle(cid, title);
-        const receipt = await tx.wait();
-        console.log('Transaction hash:', receipt.hash);
-        res.status(200).json({
-            message: 'Succes!!!'
-        });
-
+        const { cid, title } = req.body;
+        const tx = await req.contracts.contentContract.setTitle(cid, title);
+        res.status(200).json({ message: 'Success!' });
     } catch (error) {
-        console.error('Eroare in timpul setarii titlului', error);
-        res.status(500).json({ message: 'Eroare in timpul setarii titlului' });
+        console.error('Error setting title:', error);
+        res.status(500).json({ message: 'Error setting title' });
     }
 });
 
-// Endpoint pentru preluarea taxei
-application.get('/api/v1/fee', async (req, res) => {
+application.post('/api/v1/set-price', authMiddleware, upload.none(), async (req, res) => {
     try {
-        const fee = await contractContent.getPlatformFee();
-        res.json(fee.toString());
-    } catch (error) {
-        console.error('Error:', error);
-        res.status(500).json({ message: 'Error fetching platform fee' });
-    }
-});
-
-// Endpoint pentru setarea pretului 
-application.post('/api/v1/set-price', upload.none(), async (req, res) => {
-    try {
-        const cid = req.body.cid;
-        const price = req.body.price;
+        const { cid, price } = req.body;
         const priceFormatted = ethers.parseEther(price);
-        const tx = await contractContent.setPrice(cid, priceFormatted);
-        const receipt = await tx.wait();
-        console.log('Transaction hash:', receipt.hash);
-        res.status(200).json({
-            message: 'Succes!!!'
-        });
-
+        const tx = await req.contracts.contentContract.setPrice(cid, priceFormatted);
+        res.status(200).json({ message: 'Success!' });
     } catch (error) {
-        console.error('Eroare in timpul setarii continutului ca indisponibil', error);
-        res.status(500).json({ message: 'Eroare in timpul setarii continutului ca indisponibil' });
+        console.error('Error setting price:', error);
+        res.status(500).json({ message: 'Error setting price' });
     }
 });
 
 
-// Endpoint pentru cumpararea licentei 
-application.post('/api/v1/buy-licence', upload.none(), async (req, res) => {
+application.post('/api/v1/buy-licence', authMiddleware, upload.none(), async (req, res) => {
     try {
-        const cid = req.body.cid;
-        const duration = req.body.duration * 24 * 60 * 60; // in seconds
+        const { cid, duration } = req.body;
 
-        const content = await contractContent.getContent(cid);
+        // Validate input
+        if (!cid || !duration || isNaN(duration) || duration <= 0) {
+            return res.status(400).json({ message: 'Invalid request parameters.' });
+        }
+
+        const durationInSeconds = duration * 24 * 60 * 60;
+
+        // Fetch content and validate price
+        const content = await req.contracts.contentContract.getContent(cid);
+        if (!content) {
+            return res.status(404).json({ message: 'Content not found.' });
+        }
+
         const price = content[1];
+        if (!price || price <= 0) {
+            return res.status(400).json({ message: 'Invalid price for content.' });
+        }
 
-        const payTx = await contractLicence.pay(cid, { value: price });
-        const payReceipt = await payTx.wait();
-        console.log('Transaction hash:', payReceipt.hash);
+        // Process payment
+        const payTx = await req.contracts.licenceContract.pay(cid, { value: price });
+        await payTx.wait(); // Wait for transaction confirmation
 
-        const licenceTx = await contractLicence.issueLicence(signer.address, cid, duration);
-        const licenceReceipt = await licenceTx.wait();
-        console.log('Transaction hash:', licenceReceipt.hash);
+        // Issue licence
+        const licenceTx = await req.contracts.licenceContract.issueLicence(global.authenticatedAccount, cid, durationInSeconds);
+        await licenceTx.wait(); // Wait for transaction confirmation
 
-        res.status(200).json({
-            message: 'Succes!!!'
-        });
+        // Success response
+        res.status(200).json({ message: 'License successfully purchased.' });
     } catch (error) {
-        console.error('Eroare in timpul cumpararii licentei:', error);
-        res.status(500).json({ message: 'Eroare in timpul cumpararii licentei' });
+        console.error('Error buying license:', error);
+
+        // Enhanced error handling
+        const errorMessage = error.reason || 'Error buying license';
+        res.status(500).json({ message: errorMessage });
     }
 });
 
-// get all files for a creator endpoint
-application.get('/api/v1/my-licences', async (req, res) => {
+
+application.get('/api/v1/my-licences', authMiddleware, async (req, res) => {
     try {
-        const requestedLicences = await contractLicence.getLicencesForUser(signer.address);
+        const requestedLicences = await req.contracts.licenceContract.getLicencesForUser(global.authenticatedAccount);
         const formattedLicences = requestedLicences.map(licence => ({
             issueDate: (new Date(Number(licence[0]) * 1000)).toLocaleString(),
             expiryDate: (new Date(Number(licence[1]) * 1000)).toLocaleString(),
@@ -266,42 +234,43 @@ application.get('/api/v1/my-licences', async (req, res) => {
     }
 });
 
-// Endpoint pentru revoke licence
-application.post('/api/v1/revoke-licence', async (req, res) => {
+application.post('/api/v1/revoke-licence', authMiddleware, async (req, res) => {
     try {
         const { cid } = req.body;
-        const tx = await contractLicence.revokeLicence(cid);
-        const receipt = await tx.wait();
-        console.log('Transaction hash:', receipt.hash);
-        res.status(200).json({
-            message: 'Succes!!!'
-        });
-
+        const tx = await req.contracts.licenceContract.revokeLicence(cid);
+        res.status(200).json({ message: 'Success!' });
     } catch (error) {
-        console.error('Eroare in timpul revocarii licentei', error);
-        res.status(500).json({ message: 'Eroare in timpul revocarii licentei' });
+        console.error('Error revoking license:', error);
+        res.status(500).json({ message: 'Error revoking license' });
     }
 });
 
-// Endpoint pentru setarea taxei 
-application.post('/api/v1/set-fee', async (req, res) => {
+application.get('/api/v1/fee', authMiddleware, async (req, res) => {
+    try {
+        const fee = await req.contracts.contentContract.getPlatformFee();
+        res.json(fee.toString());
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({ message: 'Error fetching platform fee' });
+    }
+});
+
+application.post('/api/v1/set-fee', authMiddleware, async (req, res) => {
     try {
         const { fee } = req.body;
         const feeFormatted = ethers.parseEther(fee);
-        const tx = await contractContent.setPlatformFee(feeFormatted);
+        const tx = await req.contracts.contentContract.setPlatformFee(feeFormatted);
         const receipt = await tx.wait();
         console.log('Transaction hash:', receipt.hash);
         res.status(200).json({
             message: 'Succes!!!'
         });
-
     } catch (error) {
         console.error('Eroare in timpul setarii taxei platformei', error);
         res.status(500).json({ message: 'Eroare in timpul setarii taxei platformei' });
     }
 });
 
-// Start the server
 application.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
+    console.log(`Server is running on http://localhost:${port}`);
 });

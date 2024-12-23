@@ -1,12 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { ethers } from 'ethers';
 import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react'
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline'
 import axios from 'axios';
+import { AuthContext } from './ConnectMetamask';
+
 
 const FilePreview = ({ fileUrl }) => {
     const [fileType, setFileType] = useState(null);
-    
+    const { token } = useContext(AuthContext);
+
     const previewStyle = {
         width: '250px',
         height: '200px',
@@ -18,7 +21,12 @@ const FilePreview = ({ fileUrl }) => {
     useEffect(() => {
         const fetchFileType = async () => {
             try {
-                const response = await fetch(fileUrl, { method: 'HEAD' });
+                const response = await fetch(fileUrl, { 
+                    method: 'HEAD',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
                 const contentType = response.headers.get('Content-Type');
                 setFileType(contentType ? contentType.toLowerCase() : 'unknown');
             } catch (error) {
@@ -45,7 +53,7 @@ const FilePreview = ({ fileUrl }) => {
             };
             setFileType(extToMime[extension] || 'unknown');
         }
-    }, [fileUrl]);
+    }, [fileUrl, token]);
 
     if (!fileType) {
         return <div>Loading preview...</div>;
@@ -82,6 +90,7 @@ const FilePreview = ({ fileUrl }) => {
 
 
 const MyContent = () => {
+    const { token } = useContext(AuthContext);
     const [contentList, setContentList] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [openDisable, setOpenDisable] = useState(false);
@@ -90,104 +99,111 @@ const MyContent = () => {
     const [price, setPrice] = useState(null);
     const [title, setTitle] = useState('');
 
-    const handleDeleteClick = async (event) => {
-        setIsLoading(true);
-        try {
-            const result = await axios.post('http://localhost:8000/api/v1/disable-content', {
-                cid: selectedContentCid,
-              });
-              setIsLoading(false);
-              setOpenDisable(false);
-              alert('Continut setat ca indisponibil');
-        } catch (uploadError) {
-            setIsLoading(false);
-            setOpenDisable(false);
-            console.error('Eroare la incarcarea documentului:', uploadError.response || uploadError);
-            alert('Eroare la incarcarea documentului');
-        } finally {
-            setIsLoading(false);
-            setOpenDisable(false);
-        }
-    };
-    
-    // Gestioneaza introducerea titlului
     const captureTitle = (event) => {
-        const selectedTitle = event.target.value;
-        setTitle(selectedTitle);
+        setTitle(event.target.value);
     };
 
-    // Gestioneaza introducerea pretului
     const capturePrice = (event) => {
-        const selectedPrice = event.target.value;
-        setPrice(selectedPrice);
-    };
-
-    // Gestioneaza trimiterea formularului
-    const handleSaveChanges = async (event) => {
-        event.preventDefault();
-
-        if (!title) {
-            alert('Te rugam sa introduci un titlu inainte de trimitere');
-            return;
-        }
-
-        if (!price) {
-            alert('Te rugam sa introduci un pret inainte de trimitere');
-            return;
-        }
-
-        const uploadData = new FormData();
-        uploadData.append('cid', selectedContentCid);
-        let result;
-
-        const selectedContent = contentList.find(content => content.CID === selectedContentCid);
-
-
-        try {
-            setIsLoading(true);
-            if(selectedContent.title !== title) {
-                uploadData.append('title', title);
-                result = await axios.post('http://localhost:8000/api/v1/set-title', uploadData);
-            }
-            if(selectedContent.price !== price) {
-                uploadData.append('price', price);
-                result = await axios.post('http://localhost:8000/api/v1/set-price', uploadData);
-            }
-            setOpenEdit(false);
-            setIsLoading(false);
-            alert('Modificari efectuate cu succes');
-
-            console.log('Raspuns server:', result.data);
-        } catch (uploadError) {
-            console.error('Eroare la modificarea continutului:', uploadError.response || uploadError);
-            alert('Eroare la modificarea continutului');
-        } finally {
-            setIsLoading(false);
-        }
+        setPrice(event.target.value);
     };
 
     const initEditForm = (cid) => {
         const selectedContent = contentList.find(content => content.CID === cid);
         setTitle(selectedContent.title);
         setPrice(ethers.formatEther(selectedContent.price));
-    }
+    };
+
+    const handleDeleteClick = async () => {
+        setIsLoading(true);
+        try {
+            const response = await fetch('http://localhost:8000/api/v1/disable-content', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ cid: selectedContentCid })
+            });
+            
+            if (response.ok) {
+                alert('Content set as unavailable');
+                fetchContent();
+            }
+        } catch (error) {
+            console.error('Error disabling content:', error);
+            alert('Error disabling content');
+        } finally {
+            setIsLoading(false);
+            setOpenDisable(false);
+        }
+    };
+
+    const handleSaveChanges = async (event) => {
+        event.preventDefault();
+        if (!title || !price) {
+            alert('Please fill in all fields');
+            return;
+        }
+
+        try {
+            setIsLoading(true);
+            const selectedContent = contentList.find(content => content.CID === selectedContentCid);
+
+            if (selectedContent.title !== title) {
+                await fetch('http://localhost:8000/api/v1/set-title', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ cid: selectedContentCid, title })
+                });
+            }
+
+            if (selectedContent.price !== price) {
+                await fetch('http://localhost:8000/api/v1/set-price', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ cid: selectedContentCid, price })
+                });
+            }
+
+            setOpenEdit(false);
+            fetchContent();
+            alert('Changes saved successfully');
+        } catch (error) {
+            console.error('Error updating content:', error);
+            alert('Error updating content');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const fetchContent = async () => {
+        try {
+            setIsLoading(true);
+            const response = await fetch('http://localhost:8000/api/v1/my-content', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            const data = await response.json();
+            setContentList(data);
+        } catch (error) {
+            console.error('Error fetching content:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchContent = async () => {
-            try {
-                setIsLoading(true);
-                const response = await fetch('http://localhost:8000/api/v1/my-content');
-                const data = await response.json();
-                setContentList(data);
-                setIsLoading(false);
-            } catch (error) {
-                console.error('Error fetching content:', error);
-                setIsLoading(false);
-            }
-        };
-
-        fetchContent();
-    }, []);
+        if (token) {
+            fetchContent();
+        }
+    }, [token]);
 
     const cardStyle = {
         border: '1px solid #e5e7eb',

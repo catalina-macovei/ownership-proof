@@ -16,11 +16,11 @@ contract ContentManager is Ownable {
         _;
     }
 
-    event ContentAdded(address creator, string CID);
-    event ContentIsAvailableChanged(address creator, string CID);
-    event ContentPriceChanged(string CID, uint oldPrice, uint newPrice);
-    event ContentTitleChanged(string CID, string oldTitle, string newTitle);
-    event ContentUsageCountChanged(string CID, uint oldUsageCount, uint newUsageCount);
+    event ContentAdded(address indexed creator, string indexed CID);
+    event ContentIsAvailableChanged(address indexed creator, string indexed CID);
+    event ContentPriceChanged(string indexed CID, uint oldPrice, uint newPrice);
+    event ContentTitleChanged(string indexed CID, string oldTitle, string newTitle);
+    event ContentUsageCountChanged(string indexed CID, uint oldUsageCount, uint newUsageCount);
     event PlatformFeeChanged(uint oldFee, uint newFee);
 
     struct Content {
@@ -33,7 +33,7 @@ contract ContentManager is Ownable {
     }
 
     mapping(string => Content) private contents;
-    string[] private contentCIDs; // Array to keep track of all CIDs
+    string[] private contentCIDs;
 
     uint private platformFee;
     address private admin;
@@ -44,21 +44,16 @@ contract ContentManager is Ownable {
     }
 
     function addContent(uint price, string memory CID, string memory title) public payable {
-        
-        require (contents[CID].creator == address(0) && contents[CID].isAvailable == false, "Content is already on the platform!");
-
+        require(contents[CID].creator == address(0) && !contents[CID].isAvailable, "Content is already on the platform!");
         require(msg.value == platformFee, "You must pay the platform fee to upload content");
 
-        // Transfer platform fee to admin
         (bool success, ) = payable(admin).call{value: msg.value}("");
         require(success, "Failed to transfer platform fee");
 
-        // Add content CID in the list only if it isn't already there
         if (contents[CID].creator == address(0)) {
-            contentCIDs.push(CID); // Store CID in the list
+            contentCIDs.push(CID);
         }
-        
-        // Add content to mapping and list
+
         contents[CID] = Content({
             creator: msg.sender,
             price: price,
@@ -78,9 +73,7 @@ contract ContentManager is Ownable {
     }
 
     function getContent(string memory CID) public view OnlyExistentContent(CID) returns (address creator, uint price, uint usageCount, string memory title, bool isAvailable) {
-
         Content memory content = contents[CID];
-
         return (content.creator, content.price, content.usageCount, content.title, content.isAvailable);
     }
 
@@ -103,11 +96,8 @@ contract ContentManager is Ownable {
     }
 
     function setTitle(string memory CID, string memory newTitle) external OnlyExistentContent(CID) OnlyCreator(contents[CID].creator) {
-
         string memory oldTitle = contents[CID].title;
-
         contents[CID].title = newTitle;
-
         emit ContentTitleChanged(CID, oldTitle, newTitle);
     }
 

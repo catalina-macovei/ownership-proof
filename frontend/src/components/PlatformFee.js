@@ -5,12 +5,21 @@ import { ethers } from 'ethers';
 const PlatformFee = () => {
     const [fee, setFee] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [authToken, setAuthToken] = useState(null); // Store token in state
 
     useEffect(() => {
+        // Get the token from localStorage or some other source
+        const token = localStorage.getItem('authToken'); // Assuming you store it in localStorage
+        setAuthToken(token);
+
         const fetchPlatformFee = async () => {
             try {
                 setIsLoading(true);
-                const response = await fetch('http://localhost:8000/api/v1/fee');
+                const response = await fetch('http://localhost:8000/api/v1/fee', {
+                    headers: {
+                        Authorization: `Bearer ${token}` // Include the token in the headers
+                    }
+                });
                 const data = await response.json();
                 console.log(data);
                 setFee(ethers.formatEther(data));
@@ -20,19 +29,19 @@ const PlatformFee = () => {
                 setIsLoading(false);
             }
         };
-    
-        fetchPlatformFee();
-    }, []);
 
+        if (token) {
+            fetchPlatformFee();
+        }
+    }, [authToken]);
 
-    // Gestioneaza introducerea pretului
+    // Handle fee input
     const captureFee = (event) => {
         const selectedFee = event.target.value;
         setFee(selectedFee);
-            
     };
 
-    // Gestioneaza trimiterea formularului
+    // Handle form submission
     const processForm = async (event) => {
         event.preventDefault();
 
@@ -50,9 +59,15 @@ const PlatformFee = () => {
         try {
             setIsLoading(true);
 
-            const result = await axios.post('http://localhost:8000/api/v1/set-fee', {
-                fee: fee
-            });
+            const result = await axios.post(
+                'http://localhost:8000/api/v1/set-fee',
+                { fee: fee },
+                {
+                    headers: {
+                        Authorization: `Bearer ${authToken}` // Include the token in the headers
+                    }
+                }
+            );
 
             setIsLoading(false);
             alert('Taxa actualizata cu succes');
@@ -65,7 +80,7 @@ const PlatformFee = () => {
             setIsLoading(false);
         }
     };
-
+    
     return (
         <div className="relative mx-auto max-w-2xl px-4 py-6 sm:px-6 lg:px-8">
             {/* Loading Overlay */}

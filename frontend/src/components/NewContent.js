@@ -36,45 +36,36 @@ const NewContent = () => {
         const selectedProof = event.target.files[0];
         setProof(selectedProof);
         setFileName(selectedProof.name);
-        console.log('Document selectat:', selectedProof); // Afiseaza documentul selectat
+        console.log('Selected document:', selectedProof);
     };
 
-    // Gestioneaza introducerea titlului
     const captureTitle = (event) => {
         const selectedTitle = event.target.value;
         setTitle(selectedTitle);
     };
 
-    // Gestioneaza introducerea pretului
     const capturePrice = (event) => {
         const selectedPrice = event.target.value;
         setPrice(selectedPrice);
     };
 
-    // Gestioneaza resetarea formularului
     const handleReset = () => {
-      console.log('reseting');
-      formRef.current.reset();
-      setFileName('');
+        console.log('reseting');
+        formRef.current.reset();
+        setFileName('');
     };
 
-    // Gestioneaza trimiterea formularului
     const processForm = async (event) => {
         event.preventDefault();
+        const storedToken = sessionStorage.getItem('authToken');
 
-        // Validation checks
-        if (!proof) {
-            alert('Te rugam sa selectezi un document inainte de trimitere');
+        if (!storedToken) {
+            alert('Please connect with MetaMask first');
             return;
         }
 
-        if (!title) {
-            alert('Te rugam sa introduci un titlu inainte de trimitere');
-            return;
-        }
-
-        if (!price) {
-            alert('Te rugam sa introduci un pret inainte de trimitere');
+        if (!proof || !title || !price) {
+            alert('Please fill in all required fields');
             return;
         }
 
@@ -85,21 +76,25 @@ const NewContent = () => {
 
         try {
             setIsLoading(true);
-
-            const result = await axios.post('http://localhost:8000/api/v1/authorship-proof', uploadData, {
+            const response = await fetch('http://localhost:8000/api/v1/authorship-proof', {
+                method: 'POST',
                 headers: {
-                    'Content-Type': 'multipart/form-data',
+                    'Authorization': `Bearer ${storedToken}`
                 },
+                body: uploadData
             });
 
-            handleReset();
-            setIsLoading(false);
-            alert('Document incarcat cu succes');
-
-            console.log('Raspuns server:', result.data);
-        } catch (uploadError) {
-            console.error('Eroare la incarcarea documentului:', uploadError.response || uploadError);
-            alert('Eroare la incarcarea documentului');
+            if (response.ok) {
+                const result = await response.json();
+                handleReset();
+                alert('Document uploaded successfully');
+                console.log('Server response:', result);
+            } else {
+                throw new Error('Upload failed');
+            }
+        } catch (error) {
+            console.error('Error uploading document:', error);
+            alert('Error uploading document');
         } finally {
             setIsLoading(false);
         }
