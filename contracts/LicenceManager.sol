@@ -43,7 +43,7 @@ contract LicenceManager {
         require(!licences[user][CID].isValid, "Licence already exists");
 
         uint256 issueDate = block.timestamp;
-        uint256 expiryDate = issueDate + duration;
+        uint256 expiryDate = calculateExpiryDate(issueDate, duration);
 
         if (licences[user][CID].userId == address(0)) {
             ownedLicencesCids[user].push(CID);
@@ -109,5 +109,9 @@ contract LicenceManager {
             ownedLicences[i] = licences[user][ownedLicencesCids[user][i]];
         }
         return ownedLicences;
+    }
+
+    function calculateExpiryDate(uint256 issueDate, uint256 duration) private pure returns (uint256 expiryDate) {
+        expiryDate = issueDate + duration;
     }
 }
