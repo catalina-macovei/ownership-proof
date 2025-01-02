@@ -1,4 +1,4 @@
-import React, { useState, useEffect, createContext } from 'react';
+import React, { useState, useEffect, createContext} from 'react';
 import { useSDK } from "@metamask/sdk-react";
 
 // Create an auth context to share the token across components

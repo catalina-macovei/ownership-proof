@@ -2,8 +2,9 @@ import React, { useState, useEffect, useContext } from 'react';
 import { ethers } from 'ethers';
 import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react'
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline'
-import axios from 'axios';
+import {instantiateContracts} from '../utils/functions.utils'
 import { AuthContext } from './ConnectMetamask';
+import { useSDK } from "@metamask/sdk-react";
 
 
 const FilePreview = ({ fileUrl }) => {
@@ -23,9 +24,6 @@ const FilePreview = ({ fileUrl }) => {
             try {
                 const response = await fetch(fileUrl, { 
                     method: 'HEAD',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
                 });
                 const contentType = response.headers.get('Content-Type');
                 setFileType(contentType ? contentType.toLowerCase() : 'unknown');
@@ -98,6 +96,18 @@ const MyContent = () => {
     const [selectedContentCid, setSelectedContentCid] = useState(null);
     const [price, setPrice] = useState(null);
     const [title, setTitle] = useState('');
+    const { sdk, connected, connecting, chainId } = useSDK();
+    const [contracts, setContracts] = useState(null);
+
+    useEffect(() => {
+        const init = async () => {
+            if (sdk && token) {
+                const contractInstances = await instantiateContracts(sdk);
+                setContracts(contractInstances);
+            }
+        };
+        init();
+    }, [sdk, token]);
 
     const captureTitle = (event) => {
         setTitle(event.target.value);
@@ -114,21 +124,11 @@ const MyContent = () => {
     };
 
     const handleDeleteClick = async () => {
+        if (!contracts) return;
         setIsLoading(true);
         try {
-            const response = await fetch('http://localhost:8000/api/v1/disable-content', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ cid: selectedContentCid })
-            });
-            
-            if (response.ok) {
-                alert('Content set as unavailable');
-                fetchContent();
-            }
+            await contracts.contentManager.setUnavailableContent(selectedContentCid);
+            await fetchContent();
         } catch (error) {
             console.error('Error disabling content:', error);
             alert('Error disabling content');
@@ -140,6 +140,11 @@ const MyContent = () => {
 
     const handleSaveChanges = async (event) => {
         event.preventDefault();
+        if (!contracts) {
+            console.error('Error fetching contracts');
+            return;
+        }
+
         if (!title || !price) {
             alert('Please fill in all fields');
             return;
@@ -150,30 +155,16 @@ const MyContent = () => {
             const selectedContent = contentList.find(content => content.CID === selectedContentCid);
 
             if (selectedContent.title !== title) {
-                await fetch('http://localhost:8000/api/v1/set-title', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ cid: selectedContentCid, title })
-                });
+                await contracts.contentManager.setTitle(selectedContentCid, title);
             }
 
             if (selectedContent.price !== price) {
-                await fetch('http://localhost:8000/api/v1/set-price', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ cid: selectedContentCid, price })
-                });
+                const priceFormatted = ethers.parseEther(price);
+                await contracts.contentManager.setPrice(selectedContentCid, priceFormatted);
             }
 
             setOpenEdit(false);
-            fetchContent();
-            alert('Changes saved successfully');
+            await fetchContent(); // Refresh content list after update
         } catch (error) {
             console.error('Error updating content:', error);
             alert('Error updating content');
@@ -183,15 +174,15 @@ const MyContent = () => {
     };
 
     const fetchContent = async () => {
+        if (!token) {
+            return;
+        }
         try {
             setIsLoading(true);
-            const response = await fetch('http://localhost:8000/api/v1/my-content', {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
+            const response = await fetch('http://localhost:8000/api/v1/content');
             const data = await response.json();
-            setContentList(data);
+            const filteredContent = data.filter(c => c.creator.toLowerCase() === sessionStorage.getItem('account').toLowerCase())
+            setContentList(filteredContent);
         } catch (error) {
             console.error('Error fetching content:', error);
         } finally {
@@ -199,11 +190,9 @@ const MyContent = () => {
         }
     };
 
-    useEffect(() => {
-        if (token) {
-            fetchContent();
-        }
-    }, [token]);
+     useEffect(() => {
+        fetchContent();
+    }, []);
 
     const cardStyle = {
         border: '1px solid #e5e7eb',
@@ -230,7 +219,9 @@ const MyContent = () => {
                 </div>
             )}
 
-            {contentList.length === 0 && !isLoading && <p>No content available yet.</p>}
+            {token && contentList.length === 0 && !isLoading && <p>No content available yet.</p>}
+
+            {!token && !isLoading && <p>You need to authenticate first.</p>}
            
            {/* Disable modal dialog */}
             <Dialog open={openDisable} onClose={setOpenDisable} className="relative z-10">
@@ -347,6 +338,8 @@ const MyContent = () => {
                                         </div>
                                     </div>
                                 </div>
+
+                                <p className="mt-1 text-sm/6 text-red-600">You will need to confirm the transaction twice!</p>
                                 </div>
                             </div>
                             </div>
@@ -372,7 +365,7 @@ const MyContent = () => {
                     </div>
                 </Dialog>
 
-            {contentList.map((content) => (
+            {token && contentList.map((content) => (
                 <div key={content.CID} style={cardStyle}>
                     <FilePreview fileUrl={content.fileUrl} />
                     <div style={{ marginTop: '1rem' }}>

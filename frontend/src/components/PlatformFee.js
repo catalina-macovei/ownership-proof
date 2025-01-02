@@ -1,39 +1,42 @@
-import axios from 'axios';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { ethers } from 'ethers';
+import { useSDK } from "@metamask/sdk-react";
+import {instantiateContracts} from '../utils/functions.utils'
+import { AuthContext } from './ConnectMetamask';
 
 const PlatformFee = () => {
-    const [fee, setFee] = useState(null);
+    const [fee, setFee] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
-    const [authToken, setAuthToken] = useState(null); // Store token in state
-
+    const { token } = useContext(AuthContext);
+    const { sdk, connected, connecting, chainId } = useSDK();
+    const [contracts, setContracts] = useState(null);
+    
     useEffect(() => {
-        // Get the token from localStorage or some other source
-        const token = localStorage.getItem('authToken'); // Assuming you store it in localStorage
-        setAuthToken(token);
-
-        const fetchPlatformFee = async () => {
-            try {
-                setIsLoading(true);
-                const response = await fetch('http://localhost:8000/api/v1/fee', {
-                    headers: {
-                        Authorization: `Bearer ${token}` // Include the token in the headers
-                    }
-                });
-                const data = await response.json();
-                console.log(data);
-                setFee(ethers.formatEther(data));
-                setIsLoading(false);
-            } catch (error) {
-                console.error('Error fetching fee:', error);
-                setIsLoading(false);
+        const init = async () => {
+            if (sdk && token) {
+                const contractInstances = await instantiateContracts(sdk);
+                setContracts(contractInstances);
             }
         };
+        init();
+    }, [sdk, token]);
 
-        if (token) {
-            fetchPlatformFee();
+    const fetchPlatformFee = async () => {
+        try {
+            setIsLoading(true);
+            const response = await fetch('http://localhost:8000/api/v1/fee');
+            const data = await response.json();
+            setFee(ethers.formatEther(data));
+            setIsLoading(false);
+        } catch (error) {
+            console.error('Error fetching fee:', error);
+            setIsLoading(false);
         }
-    }, [authToken]);
+    };
+
+    useEffect(() => {
+        fetchPlatformFee();
+    }, [token]);
 
     // Handle fee input
     const captureFee = (event) => {
@@ -44,6 +47,8 @@ const PlatformFee = () => {
     // Handle form submission
     const processForm = async (event) => {
         event.preventDefault();
+
+        if (!contracts) return;
 
         // Validation checks
         if (!fee) {
@@ -59,20 +64,11 @@ const PlatformFee = () => {
         try {
             setIsLoading(true);
 
-            const result = await axios.post(
-                'http://localhost:8000/api/v1/set-fee',
-                { fee: fee },
-                {
-                    headers: {
-                        Authorization: `Bearer ${authToken}` // Include the token in the headers
-                    }
-                }
-            );
+            const feeFormatted = ethers.parseEther(fee);
+            await contracts.contentManager.setPlatformFee(feeFormatted);
 
             setIsLoading(false);
             alert('Taxa actualizata cu succes');
-
-            console.log('Raspuns server:', result.data);
         } catch (uploadError) {
             console.error('Eroare la actualizarea taxei:', uploadError.response || uploadError);
             alert('Eroare la actualizarea taxei');
@@ -93,7 +89,9 @@ const PlatformFee = () => {
                 </div>
             )}
 
-            <form onSubmit={processForm}>
+            {!token && !isLoading && <p>You need to authenticate first.</p>}    
+
+            {token && <form onSubmit={processForm}>
                 <div className="space-y-12">
                     <div className="border-b border-gray-900/10 pb-12">
                         <div className="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-1">
@@ -132,7 +130,7 @@ const PlatformFee = () => {
                         {isLoading ? 'Uploading...' : 'Save'}
                     </button>
                 </div>
-            </form>
+            </form>}
         </div>
     )
 };
