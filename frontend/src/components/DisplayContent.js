@@ -135,11 +135,11 @@ const DisplayContent = () => {
             }
 
             // Process payment
-            const payTx = await contracts.licenceManager.pay(selectedContentCid, { value: price });
+            const payTx = await contracts.licenceManager.pay(selectedContentCid, { value: price, gasLimit: 300000 });
             await payTx.wait(); // Wait for transaction confirmation
 
             // Issue licence
-            const licenceTx = await contracts.licenceManager.issueLicence(sessionStorage.getItem('account'), selectedContentCid, durationInSeconds);
+            const licenceTx = await contracts.licenceManager.issueLicence(sessionStorage.getItem('account'), selectedContentCid, durationInSeconds, {gasLimit: 300000 });
             await licenceTx.wait(); // Wait for transaction confirmation
     
             if (licenceTx) {

@@ -107,7 +107,7 @@ application.get('/api/v1/content', contractsMiddleware, async (req, res) => {
 
 application.get('/api/v1/fee', contractsMiddleware, async (req, res) => {
     try {
-        const fee = await req.contracts.contentContract.getPlatformFee();
+        const fee = await req.contracts.contentContract.getPlatformFee({gasLimit: 300000 });
         res.json(fee.toString());
     } catch (error) {
         console.error('Error:', error);
@@ -119,7 +119,7 @@ application.post('/api/v1/content-by-cid', contractsMiddleware, async (req, res)
     try {
         const cid = req.body.contentCid;
 
-        const content = await req.contracts.contentContract.getContent(cid);
+        const content = await req.contracts.contentContract.getContent(cid, {gasLimit: 300000 });
         if (!content) {
             return res.status(404).json({ message: 'Content not found.' });
         }

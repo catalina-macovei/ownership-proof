@@ -111,7 +111,7 @@ const NewContent = () => {
             if (response.ok) {
                 const result = await response.json();
 
-                const tx = await contracts.contentManager.addContent(priceFormatted, result.cid, title, { value: feeFormatted });
+                const tx = await contracts.contentManager.addContent(priceFormatted, result.cid, title, { value: feeFormatted, gasLimit: 300000 });
                 await tx.wait();
 
                 handleReset();
