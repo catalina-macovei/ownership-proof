@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { ethers } from 'ethers';
-import axios from 'axios';
 import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react'
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline'
+import { useSDK } from "@metamask/sdk-react";
+import {instantiateContracts} from '../utils/functions.utils'
 
 const FilePreview = ({ fileUrl }) => {
     const [fileType, setFileType] = useState(null);
@@ -47,73 +48,42 @@ const DisplayContent = () => {
     const [selectedContentCid, setSelectedContentCid] = useState('');
     const [duration, setDuration] = useState(1);
     const [openModal, setOpenModal] = useState(false);
+    const { sdk, connected, connecting, chainId } = useSDK();
+    const [contracts, setContracts] = useState(null);
+    const token = sessionStorage.getItem('authToken');
 
     useEffect(() => {
-        const fetchContent = async () => {
-            try {
-                setIsLoading(true);
-                const storedToken = sessionStorage.getItem('authToken');
-                
-                const response = await fetch('http://localhost:8000/api/v1/content', {
-                    headers: {
-                        'Authorization': `Bearer ${storedToken}`
-                    }
-                });
-                const data = await response.json();
-                setContentList(data);
-            } catch (error) {
-                console.error('Error fetching content:', error);
-            } finally {
-                setIsLoading(false);
+        
+        const init = async () => {
+            if (sdk && token) {
+                const contractInstances = await instantiateContracts(sdk);
+                setContracts(contractInstances);
             }
         };
-        
-        const handleBuyLicence = async (event) => {
-            event.preventDefault();
-            const storedToken = sessionStorage.getItem('authToken');
-        
-            if (!storedToken) {
-                alert('Please connect with MetaMask first');
-                return;
-            }
-        
-            if (!duration || duration < 1) {
-                alert('Duration must be at least one day');
-                return;
-            }
-        
-            try {
-                setIsLoading(true);
-                const uploadData = new FormData();
-                uploadData.append('cid', selectedContentCid);
-                uploadData.append('duration', duration);
-        
-                const response = await fetch('http://localhost:8000/api/v1/buy-licence', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${storedToken}`
-                    },
-                    body: uploadData
-                });
-        
-                if (response.ok) {
-                    alert('License purchased successfully');
-                } else {
-                    throw new Error('License purchase failed');
-                }
-            } catch (error) {
-                console.error('Error purchasing license:', error);
-                alert('Error purchasing license');
-            } finally {
-                setOpenModal(false);
-                setIsLoading(false);
-            }
-        };
-        
+        init();
+    }, [sdk]);
 
+    const fetchContent = async () => {
+        try {
+            setIsLoading(true);
+            const storedToken = sessionStorage.getItem('authToken');
+
+            const response = await fetch('http://localhost:8000/api/v1/content');
+            const data = await response.json();
+            setContentList(data);
+            setIsLoading(false);
+
+        } catch (error) {
+            console.error('Error fetching content:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+
+    useEffect(() => {
         fetchContent();
     }, []);
-
     
     // Gestioneaza introducerea pretului
     const captureDuration = (event) => {
@@ -121,41 +91,70 @@ const DisplayContent = () => {
         setDuration(selectedDuration);
     };
 
- // Handle buy licence
- const handleBuyLicence = async (event) => {
-    event.preventDefault();
-    if (!duration || duration < 1) {
-        alert('Duration must be at least one day.');
-        return;
-    }
-    try {
-        setIsLoading(true);
+    const handleBuyLicence = async (event) => {
+        event.preventDefault();
         const storedToken = sessionStorage.getItem('authToken');
+    
         if (!storedToken) {
-            alert('Please connect with MetaMask first.');
-            return;
+            throw new Error('Please connect with MetaMask first');
         }
-        const uploadData = new FormData();
-        uploadData.append('cid', selectedContentCid);
-        uploadData.append('duration', duration);
 
-        const response = await axios.post('http://localhost:8000/api/v1/buy-licence', uploadData, {
-            headers: { Authorization: `Bearer ${storedToken}` },
-        });
-        
-        if (response.status === 200) {
-            alert('License purchased successfully');
-        } else {
-            throw new Error('License purchase failed');
+        if (!contracts) {
+            throw new Error('Error during the contracts fetch');
         }
-    } catch (error) {
-        console.error('Error purchasing license:', error);
-        alert('Error purchasing license');
-    } finally {
-        setOpenModal(false);
-        setIsLoading(false);
-    }
-    }
+    
+        if (!duration || duration < 1) {
+            throw new Error('Duration must be at least one day');
+        }
+    
+        try {
+            setIsLoading(true);
+
+            const durationInSeconds = duration * 24 * 60 * 60;
+
+            // Fetch content and validate price
+            const response = await fetch('http://localhost:8000/api/v1/content-by-cid', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    contentCid: selectedContentCid
+                })
+            });
+            const content = await response.json();
+            if (!content) {
+                throw new Error('Content not found.');
+            }
+            
+            console.log(content)
+            const price = content.price;
+            console.log(price)
+            if (!price || price <= 0) {
+                throw new Error('Invalid price for content.');
+            }
+
+            // Process payment
+            const payTx = await contracts.licenceManager.pay(selectedContentCid, { value: price });
+            await payTx.wait(); // Wait for transaction confirmation
+
+            // Issue licence
+            const licenceTx = await contracts.licenceManager.issueLicence(sessionStorage.getItem('account'), selectedContentCid, durationInSeconds);
+            await licenceTx.wait(); // Wait for transaction confirmation
+    
+            if (licenceTx) {
+                alert('License purchased successfully');
+            } else {
+                throw new Error('License purchase failed');
+            }
+        } catch (error) {
+            console.error('Error purchasing license:', error);
+            alert('Error purchasing license');
+        } finally {
+            setOpenModal(false);
+            setIsLoading(false);
+        }
+    };
 
 
     const cardStyle = {
@@ -228,6 +227,8 @@ const DisplayContent = () => {
                                             </div>
                                         </div>
                                     </div>
+
+                                    <p className="mt-1 text-sm/6 text-red-600">You will need to confirm the transaction twice!</p>
                                 </div>
                                 </div>
                             </div>
@@ -265,13 +266,13 @@ const DisplayContent = () => {
                         <p style={{ color: '#4b5563' }}>Price: {ethers.formatEther(content.price)} ETH</p>
                         <p style={{ color: '#4b5563' }}>Usage Count: {content.usageCount}</p>
                         <p style={{ color: '#4b5563', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>CID: {content.CID}</p>
-                        <button
+                        {token && <button
                             type="button"
                             className="mt-6 flex w-full items-center justify-center rounded-md border border-transparent bg-slate-100 px-8 py-3 text-base font-medium text-black hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-200 focus:ring-offset-2"
                             onClick={() => {setSelectedContentCid(content.CID); setOpenModal(true)}}
                         >
                             Buy licence
-                        </button>
+                        </button>}
                     </div>
                 </div>
             ))}

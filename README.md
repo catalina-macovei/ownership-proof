@@ -38,7 +38,7 @@ node server.js
 ```
 npx hardhat run scripts/deploy.js --network sepolia   
 ```
-- After deployment, copy contract addresses and paste them in the .env file
+- After deployment, copy contract addresses and paste them in the .env file and constants.js
 ```
 Content_Manager=contract_address_here
 Licence_Manager=contract_address_here

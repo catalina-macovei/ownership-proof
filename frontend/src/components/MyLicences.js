@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { ethers } from 'ethers';
-import axios from 'axios';
 import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react';
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { AuthContext } from './ConnectMetamask';
+import { useSDK } from "@metamask/sdk-react";
+import {instantiateContracts} from '../utils/functions.utils'
+
 
 const FilePreview = ({ fileUrl }) => {
     const [fileType, setFileType] = useState(null);
@@ -27,9 +28,6 @@ const FilePreview = ({ fileUrl }) => {
             try {
                 const response = await fetch(fileUrl, { 
                     method: 'HEAD',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
                 });
                 const contentType = response.headers.get('Content-Type');
                 setFileType(contentType ? contentType.toLowerCase() : 'unknown');
@@ -99,23 +97,31 @@ const MyLicences = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [openModal, setOpenModal] = useState(false);
     const [selectedLicenceCid, setSelectedLicenceCid] = useState(null);
+    const { sdk, connected, connecting, chainId } = useSDK();
+    const [contracts, setContracts] = useState(null);
+    
+    useEffect(() => {
+            
+        const init = async () => {
+            if (sdk && token) {
+                const contractInstances = await instantiateContracts(sdk);
+                setContracts(contractInstances);
+            }
+        };
+        init();
+    }, [sdk]);
 
     let licenceContent = {};
 
     const handleRevokeClick = async () => {
+        if (!contracts) {
+            alert('Error fetching contracts');
+            return;
+        }
         setIsLoading(true);
         try {
-            // Make the API call with axios
-            const response = await axios.post(
-                'http://localhost:8000/api/v1/revoke-licence', // URL
-                { cid: selectedLicenceCid }, // Data payload
-                { // Headers
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                    },
-                }
-            );
+            await contracts.licenceManager.revokeLicence(selectedLicenceCid);
+
             setIsLoading(false);
             setOpenModal(false);
             alert('Licence revoked successfully');
@@ -129,50 +135,51 @@ const MyLicences = () => {
             setOpenModal(false);
         }
     };
+
     
-    
-    useEffect(() => {
-        const fetchLicences = async () => {
-            try {
-                setIsLoading(true);
-
-                // get content for file preview
-
-                const responseContent = await fetch('http://localhost:8000/api/v1/content', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                const dataContent = await responseContent.json();
-
-                // get licences for user
-              const responseLicences = await fetch('http://localhost:8000/api/v1/my-licences', {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-                });
-                const dataLicence = await responseLicences.json();
-
-                // pair licences with content images
-                licenceContent = {};
-                for(let i = 0; i < dataLicence.length; i++) {
-                    dataLicence[i]['fileUrl'] = dataContent.find(content => content.CID === dataLicence[i].CID)?.fileUrl;
-                }
-                setLicencesList(dataLicence);
-
-                setIsLoading(false);
-            } catch (error) {
-                console.error('Error fetching licences:', error);
-                setIsLoading(false);
+    const fetchLicences = async () => {
+        try {
+            if (!contracts) {
+                alert('Error fetching contracts');
+                return;
             }
-        };
+            setIsLoading(true);
 
-        if (token) {
+            // get content for file preview
+
+            const responseContent = await fetch('http://localhost:8000/api/v1/content');
+            const dataContent = await responseContent.json();
+
+            // get licences for user
+            const requestedLicences = await contracts.licenceManager.getLicencesForUser(sessionStorage.getItem('account'));
+            const dataLicence = requestedLicences.map(licence => ({
+                issueDate: (new Date(Number(licence[0]) * 1000)).toLocaleString(),
+                expiryDate: (new Date(Number(licence[1]) * 1000)).toLocaleString(),
+                CID: licence[2],
+                userId: licence[3].toString(),
+                isValid: licence[4]
+            }));
+
+            // pair licences with content images
+            licenceContent = {};
+            for(let i = 0; i < dataLicence.length; i++) {
+                dataLicence[i]['fileUrl'] = dataContent.find(content => content.CID === dataLicence[i].CID)?.fileUrl;
+            }
+            setLicencesList(dataLicence);
+
+            setIsLoading(false);
+        } catch (error) {
+            console.error('Error fetching licences:', error);
+            setIsLoading(false);
+        }
+    }
+
+    useEffect(() => {
+        if (contracts && token) {
             fetchLicences();
         }
-    }, [token]);
-
+    }, [contracts, token]);
+    
     const cardStyle = {
         border: '1px solid #e5e7eb',
         borderRadius: '8px',
@@ -198,7 +205,8 @@ const MyLicences = () => {
                 </div>
             )}
 
-            {licencesList.length === 0 && !isLoading && <p>No licences available yet.</p>}
+            {token && licencesList.length === 0 && !isLoading && <p>No licences available yet.</p>}
+            {!token && !isLoading && <p>You need to authenticate first.</p>}
            
            {/* Revoke modal dialog */}
             <Dialog open={openModal} onClose={setOpenModal} className="relative z-10">
@@ -253,7 +261,7 @@ const MyLicences = () => {
                     </div>
                 </Dialog>
 
-            {licencesList.map((licence) => (
+            {token && licencesList.map((licence) => (
                 <div key={licence.CID} style={cardStyle}>
                     <FilePreview fileUrl={licence.fileUrl} />
                     <div style={{ marginTop: '1rem' }}>

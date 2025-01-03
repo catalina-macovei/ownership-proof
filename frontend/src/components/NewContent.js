@@ -1,7 +1,9 @@
-import axios from 'axios';
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useContext } from 'react';
 import { PhotoIcon } from '@heroicons/react/24/solid'
 import { ethers } from 'ethers';
+import { useSDK } from "@metamask/sdk-react";
+import {instantiateContracts} from '../utils/functions.utils'
+import { AuthContext } from './ConnectMetamask';
 
 
 const NewContent = () => {
@@ -12,24 +14,36 @@ const NewContent = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [fee, setFee] = useState(null);
     const formRef = useRef(null);
-
-    useEffect(() => {
-        const fetchPlatformFee = async () => {
-            try {
-                setIsLoading(true);
-                const response = await fetch('http://localhost:8000/api/v1/fee');
-                const data = await response.json();
-                console.log(data);
-                setFee(ethers.formatEther(data));
-                setIsLoading(false);
-            } catch (error) {
-                console.error('Error fetching fee:', error);
-                setIsLoading(false);
+    const { sdk, connected, connecting, chainId } = useSDK();
+    const [contracts, setContracts] = useState(null);
+    const { token } = useContext(AuthContext);
+        
+    useEffect(() => { 
+        const init = async () => {
+            if (sdk && token) {
+                const contractInstances = await instantiateContracts(sdk);
+                setContracts(contractInstances);
             }
         };
-        
+        init();
+    }, [sdk]);
+
+    const fetchPlatformFee = async () => {
+        try {
+            setIsLoading(true);
+            const response = await fetch('http://localhost:8000/api/v1/fee');
+            const data = await response.json();
+            setFee(ethers.formatEther(data));
+            setIsLoading(false);
+        } catch (error) {
+            console.error('Error fetching fee:', error);
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {  
         fetchPlatformFee();
-    }, []);
+    }, [connected]);
 
     // Gestioneaza selectarea fisierului
     const captureFile = (event) => {
@@ -50,7 +64,6 @@ const NewContent = () => {
     };
 
     const handleReset = () => {
-        console.log('reseting');
         formRef.current.reset();
         setFileName('');
     };
@@ -64,18 +77,29 @@ const NewContent = () => {
             return;
         }
 
+        if (!contracts) {
+            alert('Error fetching contracts.');
+            return;
+        }
+
         if (!proof || !title || !price) {
             alert('Please fill in all required fields');
             return;
         }
 
+        const priceFormatted = ethers.parseEther(price);
+        const feeFormatted = ethers.parseEther(fee);
+
         const uploadData = new FormData();
         uploadData.append('file', proof);
-        uploadData.append('price', price);
-        uploadData.append('title', title);
 
         try {
             setIsLoading(true);
+
+            if (!fee) {
+                throw new Error('Platform fee cannot be retrieved.');
+            }
+
             const response = await fetch('http://localhost:8000/api/v1/authorship-proof', {
                 method: 'POST',
                 headers: {
@@ -86,6 +110,10 @@ const NewContent = () => {
 
             if (response.ok) {
                 const result = await response.json();
+
+                const tx = await contracts.contentManager.addContent(priceFormatted, result.cid, title, { value: feeFormatted });
+                await tx.wait();
+
                 handleReset();
                 alert('Document uploaded successfully');
                 console.log('Server response:', result);
@@ -112,7 +140,9 @@ const NewContent = () => {
                 </div>
             )}
 
-            <form onSubmit={processForm} ref={formRef}>
+            {!token && !isLoading && <p>You need to authenticate first.</p>}            
+
+            {token && <form onSubmit={processForm} ref={formRef}>
                 <div className="space-y-12">
                     <div className="border-b border-gray-900/10 pb-12">
                         <div className="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-1">
@@ -204,8 +234,7 @@ const NewContent = () => {
                         {isLoading ? 'Uploading...' : 'Save'}
                     </button>
                 </div>
-            </form>
-
+            </form>}
         </div>
     )
 };
